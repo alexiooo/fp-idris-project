@@ -98,7 +98,7 @@ namespace Term
             | Lam TermVar Typ Term
             | Let TermVar Typ Term Term
             | Case Term Pattern Term
-            | Cast 
+            | Cast Term Typ
 
 
 
