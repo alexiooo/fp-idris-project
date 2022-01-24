@@ -11,12 +11,12 @@ PCF is a simple language that models computing. Its types are as follows.
 >              | PCFNat
 >              | (~>) PCFType PCFType
 >              | (*) PCFType PCFType
-> --           | U
+>              | U
 >
 > infixr 0 ~>
 > infixr 0 *
 
-We want our type to be comparable. This definition enforces unique readability.
+We want our types to be comparable. This definition enforces unique readability.
 
 > implementation Eq PCFType where
 >   PCFBool  == PCFBool  = True
@@ -43,10 +43,11 @@ We begin by defining terms.
 >              | IsZero PCFTerm
 >              | IfThenElse PCFTerm PCFTerm PCFTerm
 >              | Y PCFTerm
-> --           | I
+>              | I
 
 The Y constructor returns a fixed-point of the given term. It is required to
-define functions by recursion:
+define functions by recursion. For examplen the sum function on PCFNat is
+defined recursively.
 
 > sum : PCFTerm
 > sum = Y (L "f" (PCFNat ~> (PCFNat ~> PCFNat)) (L "m" PCFNat (L "n" PCFNat (IfThenElse (IsZero (V "n")) (V "m") (Succ (C (C (V "f") (V "m")) (Pred (V "n"))))))))
@@ -54,6 +55,10 @@ define functions by recursion:
 Our goal here is to write a function that returns the type of any closed term
 
 > typeOfClosed : PCFTerm -> Maybe PCFType
+
+We also want our terms to be comparable. However, we have to pay particular
+attention to alpha-equivalence. In order to implement that, we must define
+substitution first.
 
 We want to be able to substitute terms for variable.
 The following function implements that.
@@ -83,7 +88,30 @@ The other cases are straightforward, the substitution is simply done recursively
 > substitute   (IsZero m)         s  v    = IsZero (substitute m s v)
 > substitute   (IfThenElse p m n) s  v    = IfThenElse (substitute p s v) (substitute m s v) (substitute n s v)
 > substitute   (Y m)              s  v    = Y (substitute m s v)
-> --substitute   I                  s  v    = I
+> substitute   I                  s  v    = I
+
+We are now able to define equality for terms. The important case is lambda-abstraction.
+
+> implementation Eq PCFTerm where
+>   L v a m          == L w b n          = a == b && m == substitute n (V v) w
+
+The other cases are straightforward.
+
+>   V v              == V w      = v == w
+>   C m n            == C p q    = m == p && n == q
+>   P m n            == P p q            = m == p && n == q
+>   P1 m             == P1 n             = m == n
+>   P2 m             == P2 n             = m == n
+>   T                == T                = True
+>   F                == F                = True
+>   Zero             == Zero             = True
+>   Succ m           == Succ n           = m == n
+>   Pred m           == Pred n           = m == n
+>   IsZero m         == IsZero n         = m == n
+>   IfThenElse m n p == IfThenElse q r s = m == q && n == r && p == s
+>   Y m              == Y n              = m == n
+>   I                == I                = True
+>   _                == _                = False
 
 Reduction
 ---------
@@ -109,12 +137,11 @@ can reduce, it is thus important that the result is of type Maybe PCFTerm.
 > smallStep   (IfThenElse F m n) = Just n
 > smallStep   (IfThenElse p m n) = map (\p => IfThenElse p m n) (smallStep p)
 > smallStep   (Y m)              = Just (C m (Y m))
-> --smallStep   m with (typeOfClosed m)
-> --smallStep   m | Just U       = if m /= I
-> --                                 then Just I
-> --                               else Nothing
-> --smallStep   m | _            = Nothing
-> smallStep   _                  = Nothing
+> smallStep   m with (typeOfClosed m)
+>   smallStep   m | Just U       = if m /= I
+>                                    then Just I
+>                                  else Nothing
+>   smallStep   m | _            = Nothing
 
 An important notion is a value, which is a term that cannot be reduced further.
 
@@ -125,6 +152,7 @@ An important notion is a value, which is a term that cannot be reduced further.
 > isValue   (Succ m)  = isValue m
 > isValue   (P m n)   = True
 > isValue   (L v t m) = True
+> isValue   I         = True
 > isValue   _         = False
 
 Values are exactly the normal forms for small-step reduction, that is, values
@@ -151,10 +179,9 @@ This is the so called big-step reduction.
 > eval   (IfThenElse F m n) = eval n
 > eval   (IfThenElse p m n) = eval $ IfThenElse (eval p) m n
 > eval   (Y m)              = eval $ C m (Y m)      -- /!\ This can create infinite loops
-> --eval   m with (typeOfClosed m)
-> --eval   m | Just U       = I
-> --eval   m | _            = m
-> eval   m                  = m
+> eval   m with (typeOfClosed m)
+>   eval   m | Just U       = I
+>   eval   m | _            = m
 
 Type Checking
 -------------
@@ -220,6 +247,8 @@ the given context, or Nothing otherwise.
 >                                                            else Nothing
 >   typeOf   con        (Y m)              | _             = Nothing
 >
-> --typeOf   con        I                                    = Just U
+> typeOf     con        I                                  = Just U
+
+We can now infer the type of closed terms.
 
 > typeOfClosed = typeOf []
