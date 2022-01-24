@@ -16,11 +16,11 @@ namespace Typ
 --
 -- For now implemented as type aliases, but possibly with newtypes in future
 
-export
+public export
 TypVar : Type         -- type variables
 TypVar = String
 
-export
+public export
 TermVar : Type        -- term variables
 TermVar = String
 
