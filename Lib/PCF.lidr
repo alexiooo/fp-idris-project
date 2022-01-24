@@ -45,11 +45,18 @@ We begin by defining terms.
 >              | Y PCFTerm
 > --           | I
 
-Our goal here is to write a function that returns the type of any term:
+The Y constructor returns a fixed-point of the given term. It is required to
+define functions by recursion:
 
-> typeOf : PCFTerm -> Maybe PCFType
+> sum : PCFTerm
+> sum = Y (L "f" (PCFNat ~> (PCFNat ~> PCFNat)) (L "m" PCFNat (L "n" PCFNat (IfThenElse (IsZero (V "n")) (V "m") (Succ (C (C (V "f") (V "m")) (Pred (V "n"))))))))
 
-Before defining reduction, we need to define substitution.
+Our goal here is to write a function that returns the type of any closed term
+
+> typeOfClosed : PCFTerm -> Maybe PCFType
+
+We want to be able to substitute terms for variable.
+The following function implements that.
 
 > substitute : PCFTerm -> PCFTerm -> Var -> PCFTerm
 
@@ -78,8 +85,11 @@ The other cases are straightforward, the substitution is simply done recursively
 > substitute   (Y m)              s  v    = Y (substitute m s v)
 > --substitute   I                  s  v    = I
 
-This allows us to define small-step reduction. Not all terms can reduce,
-it is thus important that the result is of type Maybe PCFTerm
+Reduction
+---------
+
+We can now define reduction. We begin with small-step reduction. Not all terms
+can reduce, it is thus important that the result is of type Maybe PCFTerm.
 
 > smallStep : PCFTerm           -> Maybe PCFTerm
 > smallStep   (Pred Zero)        = Just Zero
@@ -99,7 +109,7 @@ it is thus important that the result is of type Maybe PCFTerm
 > smallStep   (IfThenElse F m n) = Just n
 > smallStep   (IfThenElse p m n) = map (\p => IfThenElse p m n) (smallStep p)
 > smallStep   (Y m)              = Just (C m (Y m))
-> --smallStep   m with (typeOf m)
+> --smallStep   m with (typeOfClosed m)
 > --smallStep   m | Just U       = if m /= I
 > --                                 then Just I
 > --                               else Nothing
@@ -141,7 +151,7 @@ This is the so called big-step reduction.
 > eval   (IfThenElse F m n) = eval n
 > eval   (IfThenElse p m n) = eval $ IfThenElse (eval p) m n
 > eval   (Y m)              = eval $ C m (Y m)      -- /!\ This can create infinite loops
-> --eval   m with (typeOf m)
+> --eval   m with (typeOfClosed m)
 > --eval   m | Just U       = I
 > --eval   m | _            = m
 > eval   m                  = m
@@ -149,47 +159,67 @@ This is the so called big-step reduction.
 Type Checking
 -------------
 
-> typeOfEnv : List (Var, PCFType) -> PCFTerm                           -> Maybe PCFType
-> typeOfEnv   env                    (V v)                                = lookup v env
-> typeOfEnv   env                    (C m n)            with (typeOfEnv env m)
->   typeOfEnv   env                    (C m n)            | Just (a ~> b) = if Just a == typeOfEnv env n
->                                                                             then Just b
->                                                                           else Nothing
->   typeOfEnv   env                    (C m n)            | _             = Nothing
-> typeOfEnv   env                    (L v t m)          with (typeOfEnv ((v,t)::env) m)
->   typeOfEnv   env                    (L v t m)          | Just a        = Just (t ~> a)
->   typeOfEnv   env                    (L v t m)          | _             = Nothing
-> typeOfEnv   env                    (P m n)                              = (map (*) (typeOfEnv env m)) <*> (typeOfEnv env n)
-> typeOfEnv   env                    (P1 m)             with (typeOfEnv env m)
->   typeOfEnv   env                    (P1 m)             | Just (a * b)  = Just a
->   typeOfEnv   env                    (P1 m)             | _             = Nothing
-> typeOfEnv   env                    (P2 m)             with (typeOfEnv env m)
->   typeOfEnv   env                    (P2 m)             | Just (a * b)  = Just b
->   typeOfEnv   env                    (P2 m)             | _             = Nothing
-> typeOfEnv   env                    T                                    = Just PCFBool
-> typeOfEnv   env                    F                                    = Just PCFBool
-> typeOfEnv   env                    Zero                                 = Just PCFNat
-> typeOfEnv   env                    (Succ m)           with (typeOfEnv env m)
->   typeOfEnv   env                    (Succ m)           | Just PCFNat   = Just PCFNat
->   typeOfEnv   env                    (Succ m)           | _             = Nothing
-> typeOfEnv   env                    (Pred m)           with (typeOfEnv env m)
->   typeOfEnv   env                    (Pred m)           | Just PCFNat   = Just PCFNat
->   typeOfEnv   env                    (Pred m)           | _             = Nothing
-> typeOfEnv   env                    (IsZero m)         with (typeOfEnv env m)
->   typeOfEnv   env                    (IsZero m)         | Just PCFNat   = Just PCFBool
->   typeOfEnv   env                    (IsZero m)         | _             = Nothing
-> typeOfEnv   env                    (IfThenElse p m n) with (typeOfEnv env p)
->   typeOfEnv   env                    (IfThenElse p m n) | Just PCFBool  = let t1 = typeOfEnv env m
->                                                                               t2 = typeOfEnv env n
->                                                                           in if t1 == t2
->                                                                                then t1
->                                                                              else Nothing
->   typeOfEnv   env                    (IfThenElse p m n) | _             = Nothing
-> typeOfEnv   env                    (Y m)              with (typeOfEnv env m)
->   typeOfEnv   env                    (Y m)              | Just (a ~> b) = if a == b
->                                                                             then Just a
->                                                                           else Nothing
->   typeOfEnv   env                    (Y m)              | _             = Nothing
-> --typeOfEnv   env                    I                                    = Just U
+We are now ready to define a type infering function. Such a function takes as
+arguments a context and a term, and return a type if the term is typeable in
+the given context, or Nothing otherwise.
 
-> typeOf = typeOfEnv []
+> Context = List (Var, PCFType)
+
+> typeOf : Context -> PCFTerm                             -> Maybe PCFType
+> typeOf   con        (V v)                                = lookup v con
+>
+> typeOf   con        (C m n)            with (typeOf con m)
+>   typeOf   con        (C m n)            | Just (a ~> b) = if Just a == typeOf con n
+>                                                              then Just b
+>                                                            else Nothing
+>   typeOf   con        (C m n)            | _             = Nothing
+>
+> typeOf   con        (L v t m)          with (typeOf ((v,t)::con) m)
+>   typeOf   con        (L v t m)          | Just a        = Just (t ~> a)
+>   typeOf   con        (L v t m)          | _             = Nothing
+>
+> typeOf   con        (P m n)                              = (map (*) (typeOf con m)) <*> (typeOf con n)
+>
+> typeOf   con        (P1 m)             with (typeOf con m)
+>   typeOf   con        (P1 m)             | Just (a * b)  = Just a
+>   typeOf   con        (P1 m)             | _             = Nothing
+>
+> typeOf   con        (P2 m)             with (typeOf con m)
+>   typeOf   con        (P2 m)             | Just (a * b)  = Just b
+>   typeOf   con        (P2 m)             | _             = Nothing
+>
+> typeOf   con        T                                    = Just PCFBool
+>
+> typeOf   con        F                                    = Just PCFBool
+>
+> typeOf   con        Zero                                 = Just PCFNat
+>
+> typeOf   con        (Succ m)           with (typeOf con m)
+>   typeOf   con        (Succ m)           | Just PCFNat   = Just PCFNat
+>   typeOf   con        (Succ m)           | _             = Nothing
+>
+> typeOf   con        (Pred m)           with (typeOf con m)
+>   typeOf   con        (Pred m)           | Just PCFNat   = Just PCFNat
+>   typeOf   con        (Pred m)           | _             = Nothing
+>
+> typeOf   con        (IsZero m)         with (typeOf con m)
+>   typeOf   con        (IsZero m)         | Just PCFNat   = Just PCFBool
+>   typeOf   con        (IsZero m)         | _             = Nothing
+>
+> typeOf   con        (IfThenElse p m n) with (typeOf con p)
+>   typeOf   con        (IfThenElse p m n) | Just PCFBool  = let t1 = typeOf con m
+>                                                                t2 = typeOf con n
+>                                                            in if t1 == t2
+>                                                                 then t1
+>                                                               else Nothing
+>   typeOf   con        (IfThenElse p m n) | _             = Nothing
+>
+> typeOf   con        (Y m)              with (typeOf con m)
+>   typeOf   con        (Y m)              | Just (a ~> b) = if a == b
+>                                                              then Just a
+>                                                            else Nothing
+>   typeOf   con        (Y m)              | _             = Nothing
+>
+> --typeOf   con        I                                    = Just U
+
+> typeOfClosed = typeOf []
