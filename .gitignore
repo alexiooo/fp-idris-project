@@ -27,3 +27,8 @@ cabal.sandbox.config
 dist
 dist-*
 report.cabal
+
+build/
+*.code-workspace
+
+*.swp
