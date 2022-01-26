@@ -80,6 +80,37 @@ very easy.
 >   I                == I                = True
 >   _                == _                = False
 
+In order to define small-step reduction, we must be able to substitute a term
+for a variable in another term. The following functions implement this.
+
+> total
+> substitute : PCFTerm         -> PCFTerm -> Var -> PCFTerm
+
+The important cases are the variables and lambda-abstractions.
+
+> substitute   (V w)              s          v    = if v == w
+>                                                     then s
+>                                                   else (V w)
+> substitute   (L t m)            s          v    = L t (substitute m s (S v))
+
+All the other cases are straightforward.
+
+> substitute   (C m n)            s          v    = C (substitute m s v) (substitute n s v)
+> substitute   (P m n)            s          v    = P (substitute m s v) (substitute n s v)
+> substitute   (P1 m)             s          v    = P1 (substitute m s v)
+> substitute   (P2 m)             s          v    = P2 (substitute m s v)
+> substitute   T                  s          v    = T
+> substitute   F                  s          v    = F
+> substitute   Zero               s          v    = Zero
+> substitute   (Succ m)           s          v    = Succ (substitute m s v)
+> substitute   (Pred m)           s          v    = Pred (substitute m s v)
+> substitute   (IsZero m)         s          v    = IsZero (substitute m s v)
+> substitute   (IfThenElse p m n) s          v    =
+>     IfThenElse (substitute p s v) (substitute m s v) (substitute n s v)
+> substitute   (Y m)              s          v    = Y (substitute m s v)
+> substitute   I                  s          v    = I
+
+
 Reduction
 ---------
 
@@ -95,7 +126,7 @@ can reduce, it is thus important that the result is of type Maybe PCFTerm.
 > smallStep   (IsZero (Succ m))      = F
 > smallStep   (IsZero m)             = IsZero (smallStep m)
 > smallStep   (Succ m)               = Succ (smallStep m )
-  smallStep   (C (L t m) n)          = substitute m n v
+> smallStep   (C (L t m) n)          = substitute m n 0
 > smallStep   (C m n)                = C (smallStep m) n
 > smallStep   (P1 (P m n))           = m
 > smallStep   (P2 (P m n))           = n
@@ -161,6 +192,7 @@ This is the so called big-step reduction.
 > partial
 > eval : PCFTerm -> PCFTerm
 > eval = evalEnv []
+
 
 Type Checking
 -------------
