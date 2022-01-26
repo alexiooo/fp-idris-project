@@ -54,6 +54,7 @@ defined recursively.
 
 Our goal here is to write a function that returns the type of any closed term
 
+> total
 > typeOfClosed : PCFTerm -> Maybe PCFType
 
 We also want our terms to be comparable. However, we have to pay particular
@@ -63,6 +64,7 @@ substitution first.
 We want to be able to substitute terms for variable.
 The following function implements that.
 
+> total
 > substitute : PCFTerm -> PCFTerm -> Var -> PCFTerm
 
 The base case is substitution of a variable.
@@ -119,32 +121,31 @@ Reduction
 We can now define reduction. We begin with small-step reduction. Not all terms
 can reduce, it is thus important that the result is of type Maybe PCFTerm.
 
-> smallStep : PCFTerm           -> Maybe PCFTerm
-> smallStep   (Pred Zero)        = Just Zero
-> smallStep   (Pred (Succ m))    = Just m
-> smallStep   (Pred m)           = map Pred (smallStep m)
-> smallStep   (IsZero Zero)      = Just T
-> smallStep   (IsZero (Succ m))  = Just F
-> smallStep   (IsZero m)         = map IsZero (smallStep m)
-> smallStep   (Succ m)           = map Succ (smallStep m )
-> smallStep   (C (L v t m) n)    = Just (substitute m n v)
-> smallStep   (C m n)            = map (`C` n) (smallStep m)
-> smallStep   (P1 (P m n))       = Just m
-> smallStep   (P2 (P m n))       = Just n
-> smallStep   (P1 m)             = map P1 (smallStep m)
-> smallStep   (P2 m)             = map P2 (smallStep m)
-> smallStep   (IfThenElse T m n) = Just m
-> smallStep   (IfThenElse F m n) = Just n
-> smallStep   (IfThenElse p m n) = map (\p => IfThenElse p m n) (smallStep p)
-> smallStep   (Y m)              = Just (C m (Y m))
-> smallStep   m with (typeOfClosed m)
->   smallStep   m | Just U       = if m /= I
->                                    then Just I
->                                  else Nothing
->   smallStep   m | _            = Nothing
+> partial
+> smallStep : PCFTerm               -> PCFTerm
+> smallStep   (Pred Zero)            = Zero
+> smallStep   (Pred (Succ m))        = m
+> smallStep   (Pred m)               = Pred (smallStep m)
+> smallStep   (IsZero Zero)          = T
+> smallStep   (IsZero (Succ m))      = F
+> smallStep   (IsZero m)             = IsZero (smallStep m)
+> smallStep   (Succ m)               = Succ (smallStep m )
+> smallStep   (C (L v t m) n)        = substitute m n v
+> smallStep   (C m n)                = C (smallStep m) n
+> smallStep   (P1 (P m n))           = m
+> smallStep   (P2 (P m n))           = n
+> smallStep   (P1 m)                 = P1 (smallStep m)
+> smallStep   (P2 m)                 = P2 (smallStep m)
+> smallStep   (IfThenElse T m n)     = m
+> smallStep   (IfThenElse F m n)     = n
+> smallStep   (IfThenElse p m n)     = IfThenElse (smallStep p) m n
+> smallStep   (Y m)                  = C m (Y m)
+> smallStep   m with (typeOfClosed m, m == I)
+>    smallStep   m | (Just U, False) = I
 
 An important notion is a value, which is a term that cannot be reduced further.
 
+> total
 > isValue : PCFTerm  -> Bool
 > isValue   T         = True
 > isValue   F         = True
@@ -191,7 +192,8 @@ arguments a context and a term, and return a type if the term is typeable in
 the given context, or Nothing otherwise.
 
 > Context = List (Var, PCFType)
-
+>
+> total
 > typeOf : Context -> PCFTerm                             -> Maybe PCFType
 > typeOf   con        (V v)                                = lookup v con
 >
