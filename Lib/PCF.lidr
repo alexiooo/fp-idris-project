@@ -143,8 +143,8 @@ can reduce, it is thus important that the result is of type Maybe PCFTerm.
 >                                      Just (IfThenElse p' m n)
 > smallStep (Y m)                 = Just (C m (Y m))
 > smallStep m with (typeOfClosed m, m /= I)
->    smallStep m | (Just U, True) = Just I
->    smallStep _ | (_, _)         = Nothing
+>    _ | (Just U, True) = Just I
+>    _ | (_, _)         = Nothing
 
 An important notion is a value, which is a term that cannot be reduced further.
 
