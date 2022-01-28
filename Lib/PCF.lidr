@@ -1,6 +1,7 @@
 > module Lib.PCF
 >
 > import Data.List
+> import Data.Vect
 > import Data.Fin
 > import Lib.Existentials
 
@@ -54,30 +55,30 @@ PCFTerm n encodes terms with at most n free variables
 >     Pred : PCFTerm k -> PCFTerm k                   -- predecessor
 >     IsZero : PCFTerm k -> PCFTerm k                 -- is zero predicate
 >     IfThenElse : PCFTerm k -> PCFTerm k -> PCFTerm k -> PCFTerm k
->     Y : PCFTerm (S k) -> PCFTerm k                  -- fixpoint / Y-combinator
+>     Y : PCFTerm k -> PCFTerm k                      -- fixpoint / Y-combinator
 >     I : PCFTerm k                                   -- unit value (*)
 
 We also allow unicode lambda symbols for Lambda terms
 > λ : PCFType   -> PCFTerm (S k) -> PCFTerm k
 > λ = L
 
-
-
-
-Of special interest are the closed terms, those without any free variables
-
-> ClosedPCFTerm : Type
-> ClosedPCFTerm = PCFTerm 0
-
-
-
 The Y constructor returns a fixed-point of the given term. It is required to
 define functions by recursion. For example, the sum function on PCFNat is
 defined recursively.
 
 > namespace SumExample
->   public export sum : ClosedPCFTerm
->   sum = Y (λ (PCFNat ~> (PCFNat ~> PCFNat)) (λ PCFNat (λ PCFNat (IfThenElse (IsZero (V 0)) (V 1) (Succ (C (C (V 2) (V 1)) (Pred (V 0))))))))
+>   public export sum : PCFTerm 0
+>   sum = Y (λ (PCFNat ~> (PCFNat ~> PCFNat)) 
+>             (λ PCFNat 
+>               (λ PCFNat 
+>                 (IfThenElse (IsZero (V 0)) 
+>                   (V 1) 
+>                   (Succ (C (C (V 2) (V 1)) (Pred (V 0))))))))
+
+Of special interest are the closed terms, those without any free variables
+
+> ClosedPCFTerm : Type
+> ClosedPCFTerm = PCFTerm 0
 
 Our goal here is to write a function that returns the type of any closed term
 
@@ -110,19 +111,24 @@ The other cases are just as simple.
 >   _                == _                = False
 
 In order to define small-step reduction, we must be able to substitute a term
-for a variable in another term. The following functions implement this.
+for a variable in another term. 
+We only allow the maximal variable, as indicated by the argument type, to be substituted,
+so that we can decrease that upper bound by one for the return type and maintain a sharp upper bound.
+
+The following functions implement this.
 
 > public export
-> total substitute : PCFTerm -> PCFTerm -> Var -> PCFTerm
+> total substitute : {k :_} -> PCFTerm (S k) -> PCFTerm k -> PCFTerm k
 
 When substituting a term inside another, we might need to rename (increase)
 free variables. The following function does this.
-The depth argument keeps track of how many lambda's have been encoutered.
+The depth argument keeps track of how many lambda's have been encoutered, 
+while the types reflect that the upper bound on free variables also increases.
 
-> total incFreeVar : Nat -> PCFTerm -> PCFTerm
-> incFreeVar depth (V v)              = if v < depth
->                                         then (V v)
->                                       else (V (S v))
+> total incFreeVar : (n : Nat) -> PCFTerm k -> PCFTerm (S k)
+> incFreeVar depth (V v)              = if (finToNat v) < depth
+>                                       then (V (weaken v))
+>                                       else (V (FS v))
 > incFreeVar depth (L t m)            = L t (incFreeVar (S depth) m)
 
 The other cases are uninteresting, the increment function is just passed on.
@@ -144,27 +150,35 @@ The other cases are uninteresting, the increment function is just passed on.
 
 The important cases are the variables and lambda-abstractions.
 
-> substitute (V w)              s v = if v == w
->                                         then s
->                                       else (V w)
-> substitute (L t m)            s v = L t (substitute m (incFreeVar 0 s) (S v))
+We try to strenghten (i.e., decrement) the bound on the variable index.
+The only reason for this to fail is if the index is already at the upper bound; if w == k, thus
+if strengthening fails, we should substitute
+
+> substitute (V w) s =  case strengthen w of 
+>                         Nothing => s
+>                         Just w' => V w'
+
+Recall that the body of a lambda has one more (potential) free-variable, thus the upper bound is
+automatically incremented
+
+> substitute (L t m) s = L t (substitute m (incFreeVar 0 s))
 
 All the other cases are straightforward, once again, the substitution is just passed on.
 
-< substitute (C m n)            s v = C (substitute m s v) (substitute n s v)
-< substitute (P m n)            s v = P (substitute m s v) (substitute n s v)
-< substitute (P1 m)             s v = P1 (substitute m s v)
-< substitute (P2 m)             s v = P2 (substitute m s v)
-< substitute T                  s v = T
-< substitute F                  s v = F
-< substitute Zero               s v = Zero
-< substitute (Succ m)           s v = Succ (substitute m s v)
-< substitute (Pred m)           s v = Pred (substitute m s v)
-< substitute (IsZero m)         s v = IsZero (substitute m s v)
-< substitute (IfThenElse p m n) s v =
-<     IfThenElse (substitute p s v) (substitute m s v) (substitute n s v)
-< substitute (Y m)              s v = Y (substitute m s v)
-< substitute I                  s v = I
+< substitute (C m n)            s = C (substitute m s) (substitute n s)
+< substitute (P m n)            s = P (substitute m s) (substitute n s)
+< substitute (P1 m)             s = P1 (substitute m s)
+< substitute (P2 m)             s = P2 (substitute m s)
+< substitute T                  s = T
+< substitute F                  s = F
+< substitute Zero               s = Zero
+< substitute (Succ m)           s = Succ (substitute m s)
+< substitute (Pred m)           s = Pred (substitute m s)
+< substitute (IsZero m)         s = IsZero (substitute m s)
+< substitute (IfThenElse p m n) s =
+<     IfThenElse (substitute p s ) (substitute m s) (substitute n s)
+< substitute (Y m)              s = Y (substitute m s)
+< substitute I                  s = I
 
 
 Reduction
@@ -174,7 +188,8 @@ We can now define reduction. We begin with small-step reduction. Not all terms
 can reduce, it is thus important that the result is of type Maybe PCFTerm.
 
 > public export
-> total smallStep : PCFTerm -> Maybe PCFTerm
+> -- total smallStep : {k :_} -> PCFTerm k -> Maybe (PCFTerm k)
+> total smallStep : ClosedPCFTerm -> Maybe (ClosedPCFTerm)
 > smallStep (Pred Zero)           = Just Zero
 > smallStep (Pred (Succ m))       = Just m
 > smallStep (Pred m)              = do n <- smallStep m
@@ -188,7 +203,7 @@ can reduce, it is thus important that the result is of type Maybe PCFTerm.
 > smallStep (Succ m)              = do n <- smallStep m
 >                                      Just (Succ n)
 >
-> smallStep (C (L _ m) n)         = Just (substitute m n 0)
+> smallStep (C (L _ m) n)         = Just (substitute m n)
 > smallStep (C m p)               = do n <- smallStep m
 >                                      Just (C n p)
 >
@@ -213,7 +228,7 @@ can reduce, it is thus important that the result is of type Maybe PCFTerm.
 An important notion is a value, which is a term that cannot be reduced further.
 
 > public export
-> total isValue : PCFTerm -> Bool
+> total isValue : PCFTerm k -> Bool
 > isValue T        = True
 > isValue F        = True
 > isValue Zero     = True
@@ -229,7 +244,7 @@ are the terms that cannot be reduced further.
 By successively applying small-step reductions, terms can reduce to values.
 This is the so called big-step reduction.
 
-> partial eval : PCFTerm -> PCFTerm
+> partial eval : ClosedPCFTerm -> ClosedPCFTerm
 > eval T                  = T
 > eval F                  = F
 > eval Zero               = Zero
@@ -242,7 +257,7 @@ This is the so called big-step reduction.
 > eval (IsZero (Succ m))  = F
 > eval (IsZero m)         = IsZero (eval m)
 > eval (Succ m)           = Succ (eval m)
-> eval (C (L t m) n)      = eval (substitute m n 0)
+> eval (C (L t m) n)      = eval (substitute m n)
 > eval (C m n)            = C (eval m) n
 > eval (P1 (P m _))       = eval m
 > eval (P2 (P _ n))       = eval n
@@ -263,13 +278,14 @@ We are now ready to define a type infering function. Such a function takes as
 arguments a context and a term, and return a type if the term is typeable in
 the given context, or Nothing otherwise.
 
-> Context : Type
-> Context = List PCFType
+We've been keeping track of free variables in the type of terms, 
+so we'd like to restrict to contexts that actually provide a type for all (potential) free variables
+
+> Context : Nat -> Type
+> Context n = Vect n PCFType
 >
-> total typeOf : Context -> PCFTerm -> Maybe PCFType
-> typeOf con (V v) with (inBounds v con)
->   typeOf con (V v) | Yes _                     = Just (index v con)
->   typeOf con (V v) | No _                      = Nothing
+> total typeOf : Context k -> PCFTerm k -> Maybe PCFType
+> typeOf con (V v)                               = Just (index v con)
 >
 > typeOf con (C m n) with (typeOf con m)
 >   typeOf con (C m n) | Just (a ~> b)           = if Just a == typeOf con n
@@ -337,16 +353,17 @@ A certain subset of terms are called `values'
 
 > namespace Value
 >   public export
->   data PCFValue = T
->                 | F
->                 | Zero
->                 | Succ PCFValue
->                 | I
->                 | P PCFTerm PCFTerm
->                 | L PCFType PCFTerm
+>   data PCFValue : Nat -> Type where
+>     T     : PCFValue k
+>     F     : PCFValue k
+>     Zero  : PCFValue k
+>     Succ  : PCFValue k -> PCFValue k
+>     I     : PCFValue k
+>     P     : PCFTerm k -> PCFTerm k     -> PCFValue k
+>     L     : PCFType   -> PCFTerm (S k) -> PCFValue k
 >
 >   public export
->   fromTerm : PCFTerm -> Maybe PCFValue
+>   fromTerm : PCFTerm k -> Maybe (PCFValue k)
 >   fromTerm T          = Just T
 >   fromTerm F          = Just F
 >   fromTerm Zero       = Just Zero
@@ -358,7 +375,7 @@ A certain subset of terms are called `values'
 >   fromTerm _          = Nothing
 >
 >   public export
->   toTerm : PCFValue -> PCFTerm
+>   toTerm : PCFValue k -> PCFTerm k
 >   toTerm T          = T
 >   toTerm F          = F
 >   toTerm Zero       = Zero
@@ -369,7 +386,7 @@ A certain subset of terms are called `values'
 
 Values correspond exactly to terms that are in normal forms
 
->   valuesAreNormalForms : (v : PCFValue) -> smallStep (toTerm v) = Nothing
+>   valuesAreNormalForms : (v : PCFValue 0) -> smallStep (toTerm v) = Nothing
 >   valuesAreNormalForms T        = Refl
 >   valuesAreNormalForms F        = Refl
 >   valuesAreNormalForms Zero     = Refl
