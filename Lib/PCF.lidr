@@ -117,26 +117,34 @@ Reduction
 We can now define reduction. We begin with small-step reduction. Not all terms
 can reduce, it is thus important that the result is of type Maybe PCFTerm.
 
-> partial smallStep : PCFTerm -> PCFTerm
-> smallStep (Pred Zero)           = Zero
-> smallStep (Pred (Succ m))       = m
-> smallStep (Pred m)              = Pred (smallStep m)
-> smallStep (IsZero Zero)         = T
-> smallStep (IsZero (Succ m))     = F
-> smallStep (IsZero m)            = IsZero (smallStep m)
-> smallStep (Succ m)              = Succ (smallStep m )
-> smallStep (C (L t m) n)         = substitute m n 0
-> smallStep (C m n)               = C (smallStep m) n
-> smallStep (P1 (P m n))          = m
-> smallStep (P2 (P m n))          = n
-> smallStep (P1 m)                = P1 (smallStep m)
-> smallStep (P2 m)                = P2 (smallStep m)
-> smallStep (IfThenElse T m n)    = m
-> smallStep (IfThenElse F m n)    = n
-> smallStep (IfThenElse p m n)    = IfThenElse (smallStep p) m n
-> smallStep (Y m)                 = C m (Y m)
+> total smallStep : PCFTerm -> Maybe PCFTerm
+> smallStep (Pred Zero)           = Just (Zero)
+> smallStep (Pred (Succ m))       = Just (m)
+> smallStep (Pred m)              = do m' <- smallStep m
+>                                      Just (Pred m')
+> smallStep (IsZero Zero)         = Just (T)
+> smallStep (IsZero (Succ m))     = Just (F)
+> smallStep (IsZero m)            = do m' <- smallStep m
+>                                      Just (IsZero (m'))
+> smallStep (Succ m)              = do m' <- smallStep m
+>                                      Just (Succ m')
+> smallStep (C (L _ m) n)         = Just (substitute m n 0)
+> smallStep (C m n)               = do m' <- smallStep m
+>                                      Just (C m' n)
+> smallStep (P1 (P m _))          = Just (m)
+> smallStep (P2 (P _ n))          = Just (n)
+> smallStep (P1 m)                = do m' <- smallStep m
+>                                      Just (P1 m')
+> smallStep (P2 m)                = do m' <- smallStep m
+>                                      Just (P2 m')
+> smallStep (IfThenElse T m _)    = Just (m)
+> smallStep (IfThenElse F _ n)    = Just (n)
+> smallStep (IfThenElse p m n)    = do p' <- smallStep p
+>                                      Just (IfThenElse p' m n)
+> smallStep (Y m)                 = Just (C m (Y m))
 > smallStep m with (typeOfClosed m, m /= I)
->    smallStep m | (Just U, True) = I
+>    smallStep m | (Just U, True) = Just I
+>    smallStep _ | (_, _)         = Nothing
 
 An important notion is a value, which is a term that cannot be reduced further.
 
@@ -309,7 +317,7 @@ Values correspond exactly to terms that are in normal forms
 >   valuesAreNormalForms T        = Refl
 >   valuesAreNormalForms F        = Refl
 >   valuesAreNormalForms Zero     = Refl
->   -- valuesAreNormalForms Succ t   = Refl
+>   -- valuesAreNormalForms Succ t = Refl 
 >   -- valuesAreNormalForms Succ t = Refl
 >   valuesAreNormalForms I        = Refl
 >   valuesAreNormalForms (P m n)  = Refl
