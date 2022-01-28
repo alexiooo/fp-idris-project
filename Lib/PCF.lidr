@@ -3,7 +3,7 @@
 > import Data.List
 > import Data.Vect
 > import Data.Fin
-> import Lib.Existentials
+> import Data.DPair
 
 Terms for PCF
 -------------
