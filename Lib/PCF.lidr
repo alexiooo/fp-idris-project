@@ -1,80 +1,15 @@
 > module Lib.PCF
 >
+> import public Lib.Terms
+> import public Lib.Type
+> import Data.Fin
 > import Data.List
 > import Data.Vect
-> import public Data.Fin  -- needed publically, since we publically export types that reference Fin
 > import Data.DPair
 
-Terms for PCF
--------------
+### Include Lib.Terms here
 
-PCF is a simple language that models computing. Its types are as follows.
-
-> public export
-> data PCFType = PCFBool
->              | PCFNat
->              | (~>) PCFType PCFType
->              | (*) PCFType PCFType
->              | U
->
-> infixr 0 ~>
-> infixr 0 *
-
-We want our types to be comparable. This definition enforces unique readability.
-
-> public export
-> implementation Eq PCFType where
->   PCFBool  == PCFBool  = True
->   PCFNat   == PCFNat   = True
->   (a ~> b) == (c ~> d) = a == c && b == d
->   (a * b)  == (c * d)  = a == c && b == d
->   U        == U        = True
->   _        == _        = False
-
-We begin by defining terms. We use de Bruijn indices to representent bound
-variables. This is an elegant way to deel with alpha-equivalence.
-We also keep track of (an upper bound on) free variables in the type;
-PCFTerm n encodes terms with at most n free variables
-
-> ||| Var k is a De-Bruijn index less than k
-> public export 
-> Var : Nat -> Type
-> Var k = Fin k
->
-> public export
-> data PCFTerm : Nat -> Type where 
->     V    : Var k -> PCFTerm k                        -- variables
->     C    : PCFTerm k -> PCFTerm k     -> PCFTerm k   -- application
->     L    : PCFType   -> PCFTerm (S k) -> PCFTerm k   -- lambda
->     P    : PCFTerm k -> PCFTerm k     -> PCFTerm k   -- pairing
->     P1   : PCFTerm k -> PCFTerm k                    -- first projection
->     P2   : PCFTerm k -> PCFTerm k                    -- second projection
->     T    : PCFTerm k                                 -- true
->     F    : PCFTerm k                                 -- false
->     Zero : PCFTerm k                                -- zero value
->     Succ : PCFTerm k -> PCFTerm k                   -- successor
->     Pred : PCFTerm k -> PCFTerm k                   -- predecessor
->     IsZero : PCFTerm k -> PCFTerm k                 -- is zero predicate
->     IfThenElse : PCFTerm k -> PCFTerm k -> PCFTerm k -> PCFTerm k
->     Y : PCFTerm k -> PCFTerm k                      -- fixpoint / Y-combinator
->     I : PCFTerm k                                   -- unit value (*)
-
-The Y constructor returns a fixed-point of the given term. It is required to
-define functions by recursion. For example, the sum function on PCFNat is
-defined recursively.
-
-### Include SumExample.lidr here?
-
-
-Of special interest are the closed terms, those without any free variables
-
-> ClosedPCFTerm : Type
-> ClosedPCFTerm = PCFTerm 0
-
-Our goal here is to write a function that returns the type of any closed term
-
-> public export
-> total typeOfClosed : ClosedPCFTerm -> Maybe PCFType
+### Include Lib.Type here
 
 Remember that the type only gives an upper bound, so an inhabitant of say PCFType 3 might still
 be closed. The following will try to strengthen any such term.
@@ -294,80 +229,6 @@ This is the so called big-step reduction.
 >        _ | Just U       = I
 
 
-Type Checking
--------------
 
-We are now ready to define a type infering function. Such a function takes as
-arguments a context and a term, and return a type if the term is typeable in
-the given context, or Nothing otherwise.
-
-We've been keeping track of free variables in the type of terms, 
-so we'd like to restrict to contexts that actually provide a type for all (potential) free variables
-
-> Context : Nat -> Type
-> Context n = Vect n PCFType
-
-
-> public export
-> total typeOf : Context k -> PCFTerm k -> Maybe PCFType
-> typeOf con (V v)                               = Just (index v con)
->
-> typeOf con (C m n) with (typeOf con m)
->   typeOf con (C m n) | Just (a ~> b)           = if Just a == typeOf con n
->                                                    then Just b
->                                                  else Nothing
->   typeOf con (C m n) | _                       = Nothing
->
-> typeOf con (L t m) with (typeOf (t::con) m)
->   typeOf con (L t m) | Just a                  = Just (t ~> a)
->   typeOf con (L t m) | _                       = Nothing
->
-> typeOf con (P m n)                             = (map (*) (typeOf con m)) <*> (typeOf con n)
->
-> typeOf con (P1 m) with (typeOf con m)
->   typeOf con (P1 m) | Just (a * b)             = Just a
->   typeOf con (P1 m) | _                        = Nothing
->
-> typeOf con (P2 m) with (typeOf con m)
->   typeOf con (P2 m) | Just (a * b)             = Just b
->   typeOf con (P2 m) | _                        = Nothing
->
-> typeOf con T                                   = Just PCFBool
->
-> typeOf con F                                   = Just PCFBool
->
-> typeOf con Zero                                = Just PCFNat
->
-> typeOf con (Succ m) with (typeOf con m)
->   typeOf con (Succ m) | Just PCFNat            = Just PCFNat
->   typeOf con (Succ m) | _                      = Nothing
->
-> typeOf con (Pred m) with (typeOf con m)
->   typeOf con (Pred m) | Just PCFNat            = Just PCFNat
->   typeOf con (Pred m) | _                      = Nothing
->
-> typeOf con (IsZero m) with (typeOf con m)
->   typeOf con (IsZero m) | Just PCFNat          = Just PCFBool
->   typeOf con (IsZero m) | _                    = Nothing
->
-> typeOf con (IfThenElse p m n) with (typeOf con p)
->   typeOf con (IfThenElse p m n) | Just PCFBool = let t1 = typeOf con m
->                                                      t2 = typeOf con n
->                                                  in if t1 == t2
->                                                       then t1
->                                                     else Nothing
->   typeOf con (IfThenElse p m n) | _            = Nothing
->
-> typeOf con (Y m) with (typeOf con m)
->   typeOf con (Y m) | Just (a ~> b)             = if a == b
->                                                    then Just a
->                                                  else Nothing
->   typeOf con (Y m) | _                         = Nothing
->
-> typeOf con I                                   = Just U
-
-We can now infer the type of closed terms.
-
-> typeOfClosed = typeOf []
 
 
