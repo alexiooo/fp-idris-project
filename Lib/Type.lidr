@@ -1,8 +1,8 @@
 
-> module Lib.Type
-> 
-> import Lib.PCF
-> import public Data.Vect
+< module Lib.Type
+< 
+< import Lib.Terms
+< import public Data.Vect
 
 Type Checking
 -------------
@@ -24,8 +24,8 @@ so we'd like to restrict to contexts that actually provide a type for all (poten
 >
 > typeOf con (C m n) with (typeOf con m)
 >   typeOf con (C m n) | Just (a ~> b)           = if Just a == typeOf con n
->                                                    then Just b
->                                                  else Nothing
+>                                                     then Just b
+>                                                     else Nothing
 >   typeOf con (C m n) | _                       = Nothing
 >
 > typeOf con (L t m) with (typeOf (t::con) m)
@@ -78,6 +78,6 @@ so we'd like to restrict to contexts that actually provide a type for all (poten
 
 Closed terms are typeable exactly when they are typeable with an empty context.
 
+< public export
+> typeOfClosed : ClosedPCFTerm -> Maybe PCFType
 > typeOfClosed = typeOf []
-
-
