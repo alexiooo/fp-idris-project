@@ -1,2 +1,0 @@
-
-module Lib.SystemFc.Decl
