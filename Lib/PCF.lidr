@@ -85,6 +85,38 @@ Our goal here is to write a function that returns the type of any closed term
 > public export
 > total typeOfClosed : ClosedPCFTerm -> Maybe PCFType
 
+Remember that the type only gives an upper bound, so an inhabitant of say PCFType 3 might still
+be closed. The following will try to strengthen any such term.
+This really is just a wrapper around Fin.strengthen, with straightforward recursive cases, so we 
+detail only variables and lambdas.
+
+> strengthen : {k :_} -> PCFTerm (S k) -> Maybe (PCFTerm k)
+> strengthen (V v)    = Fin.strengthen v >>= Just . V
+> strengthen (L t m)  = strengthen m     >>= Just . L t
+
+< strengthen (C m n)            = Just (C !(strengthen m) !(strengthen n))
+< strengthen (P m n)            = Just (P !(strengthen m) !(strengthen n))
+< strengthen (P1 m)             = strengthen m >>= Just . P1
+< strengthen (P2 m)             = strengthen m >>= Just . P2
+< strengthen T                  = Just T
+< strengthen F                  = Just F
+< strengthen Zero               = Just Zero
+< strengthen (Succ m)           = strengthen m >>= Just . Succ
+< strengthen (Pred m)           = strengthen m >>= Just . Pred
+< strengthen (IsZero m)         = strengthen m >>= Just . IsZero
+< strengthen (IfThenElse p m n) = do p <- strengthen p
+<                                    m <- strengthen m
+<                                    n <- strengthen n
+<                                    Just (IfThenElse p m n)
+< strengthen (Y m)              = strengthen m >>= Just . Y
+< strengthen I                  = Just I
+
+> public export
+> tryClose : {k:_} -> PCFTerm k -> Maybe ClosedPCFTerm
+> tryClose {k} t = case k of 
+>                   0      => Just t
+>                   (S k') => strengthen t >>= tryClose 
+
 We are now able to define equality for terms. The important case is
 lambda-abstraction. We are using de Bruijn indices, which make comparing terms
 very easy.
@@ -112,7 +144,7 @@ The other cases are just as simple.
 
 In order to define small-step reduction, we must be able to substitute a term
 for a variable in another term. 
-We only allow the maximal variable, as indicated by the argument type, to be substituted,
+We only allow the maximal variable, indicated k in the following signature, to be substituted,
 so that we can decrease that upper bound by one for the return type and maintain a sharp upper bound.
 
 The following functions implement this.
@@ -150,11 +182,11 @@ The other cases are uninteresting, the increment function is just passed on.
 
 The important cases are the variables and lambda-abstractions.
 
-We try to strenghten (i.e., decrement) the bound on the variable index.
+We try to strengthen (i.e., decrement) the bound on the variable index.
 The only reason for this to fail is if the index is already at the upper bound; if w == k, thus
 if strengthening fails, we should substitute
 
-> substitute (V w) s =  case strengthen w of 
+> substitute (V w) s =  case Fin.strengthen w of 
 >                         Nothing => s
 >                         Just w' => V w'
 
@@ -188,8 +220,7 @@ We can now define reduction. We begin with small-step reduction. Not all terms
 can reduce, it is thus important that the result is of type Maybe PCFTerm.
 
 > public export
-> -- total smallStep : {k :_} -> PCFTerm k -> Maybe (PCFTerm k)
-> total smallStep : ClosedPCFTerm -> Maybe (ClosedPCFTerm)
+> total smallStep : {k :_} -> PCFTerm k -> Maybe (PCFTerm k)
 > smallStep (Pred Zero)           = Just Zero
 > smallStep (Pred (Succ m))       = Just m
 > smallStep (Pred m)              = do n <- smallStep m
@@ -221,9 +252,9 @@ can reduce, it is thus important that the result is of type Maybe PCFTerm.
 >
 > smallStep (Y m)                 = Just (C m (Y m))
 >
-> smallStep m with (typeOfClosed m, m /= I)
->             _ | (Just U, True)  = Just I
->             _ | _               = Nothing
+> smallStep m = if (m /= I && (tryClose m >>= typeOfClosed) == Just U) 
+>               then Just I
+>               else Nothing
 
 An important notion is a value, which is a term that cannot be reduced further.
 
@@ -387,7 +418,7 @@ A certain subset of terms are called `values'
 Values correspond exactly to terms that are in normal forms
 
 >   valuesAreNormalForms : (v : PCFValue 0) -> smallStep (toTerm v) = Nothing
->   valuesAreNormalForms T        = Refl
+>   valuesAreNormalForms T        = ?t
 >   valuesAreNormalForms F        = Refl
 >   valuesAreNormalForms Zero     = Refl
 >   valuesAreNormalForms (Succ t) = ?succ
