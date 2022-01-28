@@ -4,6 +4,7 @@
 > import Data.Vect
 > import Data.Fin
 > import Data.DPair
+> import Lib.DSL
 
 Terms for PCF
 -------------
@@ -22,6 +23,7 @@ PCF is a simple language that models computing. Its types are as follows.
 
 We want our types to be comparable. This definition enforces unique readability.
 
+> public export
 > implementation Eq PCFType where
 >   PCFBool  == PCFBool  = True
 >   PCFNat   == PCFNat   = True
@@ -42,14 +44,14 @@ PCFTerm n encodes terms with at most n free variables
 >
 > public export
 > data PCFTerm : Nat -> Type where 
->     V   : Var k -> PCFTerm k                        -- variables
->     C   : PCFTerm k -> PCFTerm k     -> PCFTerm k   -- application
->     L   : PCFType   -> PCFTerm (S k) -> PCFTerm k   -- lambda
->     P   : PCFTerm k -> PCFTerm k     -> PCFTerm k   -- pairing
->     P1  : PCFTerm k -> PCFTerm k                    -- first projection
->     P2  : PCFTerm k -> PCFTerm k                    -- second projection
->     T   : PCFTerm k                                 -- true
->     F   : PCFTerm k                                 -- false
+>     V    : Var k -> PCFTerm k                        -- variables
+>     C    : PCFTerm k -> PCFTerm k     -> PCFTerm k   -- application
+>     L    : PCFType   -> PCFTerm (S k) -> PCFTerm k   -- lambda
+>     P    : PCFTerm k -> PCFTerm k     -> PCFTerm k   -- pairing
+>     P1   : PCFTerm k -> PCFTerm k                    -- first projection
+>     P2   : PCFTerm k -> PCFTerm k                    -- second projection
+>     T    : PCFTerm k                                 -- true
+>     F    : PCFTerm k                                 -- false
 >     Zero : PCFTerm k                                -- zero value
 >     Succ : PCFTerm k -> PCFTerm k                   -- successor
 >     Pred : PCFTerm k -> PCFTerm k                   -- predecessor
@@ -58,22 +60,25 @@ PCFTerm n encodes terms with at most n free variables
 >     Y : PCFTerm k -> PCFTerm k                      -- fixpoint / Y-combinator
 >     I : PCFTerm k                                   -- unit value (*)
 
-We also allow unicode lambda symbols for Lambda terms
-> λ : PCFType   -> PCFTerm (S k) -> PCFTerm k
-> λ = L
-
 The Y constructor returns a fixed-point of the given term. It is required to
 define functions by recursion. For example, the sum function on PCFNat is
 defined recursively.
 
+As an aside, the Lib.DSL module allows us to write PCF terms using more familiar notation, such as
+  * using λ instead of L for lambda abstraction
+  * writing if' p (then' m) (else' n)
+  * using nat' and bool' as types
+Note the ' marks, which differentiate the embedded PCF notation from Idris
+Still, it is merely sugar for PCFTerm, so it is only relevant for making nicer reading code
+
 > namespace SumExample
 >   public export sum : PCFTerm 0
->   sum = Y (λ (PCFNat ~> (PCFNat ~> PCFNat)) 
->             (λ PCFNat 
->               (λ PCFNat 
->                 (IfThenElse (IsZero (V 0)) 
->                   (V 1) 
->                   (Succ (C (C (V 2) (V 1)) (Pred (V 0))))))))
+>   sum = Y (λ (nat' ~> (nat' ~> nat')) 
+>             (λ nat' 
+>               (λ nat' 
+>                 (if' (IsZero (V 0)) 
+>                   (then' (V 1))
+>                   (else' (Succ (C (C (V 2) (V 1)) (Pred (V 0)))))))))
 
 Of special interest are the closed terms, those without any free variables
 
@@ -275,6 +280,7 @@ are the terms that cannot be reduced further.
 By successively applying small-step reductions, terms can reduce to values.
 This is the so called big-step reduction.
 
+> public export
 > partial eval : ClosedPCFTerm -> ClosedPCFTerm
 > eval T                  = T
 > eval F                  = F
@@ -314,7 +320,9 @@ so we'd like to restrict to contexts that actually provide a type for all (poten
 
 > Context : Nat -> Type
 > Context n = Vect n PCFType
->
+
+
+> public export
 > total typeOf : Context k -> PCFTerm k -> Maybe PCFType
 > typeOf con (V v)                               = Just (index v con)
 >
@@ -377,54 +385,3 @@ We can now infer the type of closed terms.
 > typeOfClosed = typeOf []
 
 
-Values and Normal Forms
--------------
-
-A certain subset of terms are called `values'
-
-> namespace Value
->   public export
->   data PCFValue : Nat -> Type where
->     T     : PCFValue k
->     F     : PCFValue k
->     Zero  : PCFValue k
->     Succ  : PCFValue k -> PCFValue k
->     I     : PCFValue k
->     P     : PCFTerm k -> PCFTerm k     -> PCFValue k
->     L     : PCFType   -> PCFTerm (S k) -> PCFValue k
->
->   public export
->   fromTerm : PCFTerm k -> Maybe (PCFValue k)
->   fromTerm T          = Just T
->   fromTerm F          = Just F
->   fromTerm Zero       = Just Zero
->   fromTerm (Succ t)   = do v <- fromTerm t
->                            Just (Succ v)
->   fromTerm I          = Just I
->   fromTerm (P m n)    = Just (P m n)
->   fromTerm (L t m)    = Just (L t m)
->   fromTerm _          = Nothing
->
->   public export
->   toTerm : PCFValue k -> PCFTerm k
->   toTerm T          = T
->   toTerm F          = F
->   toTerm Zero       = Zero
->   toTerm (Succ v)   = Succ (toTerm v)
->   toTerm I          = I
->   toTerm (P m n)    = P m n
->   toTerm (L t m)  = L t m
-
-Values correspond exactly to terms that are in normal forms
-
->   valuesAreNormalForms : (v : PCFValue 0) -> smallStep (toTerm v) = Nothing
->   valuesAreNormalForms T        = ?t
->   valuesAreNormalForms F        = Refl
->   valuesAreNormalForms Zero     = Refl
->   valuesAreNormalForms (Succ t) = ?succ
->   valuesAreNormalForms I        = Refl
->   valuesAreNormalForms (P m n)  = ?pair
->   valuesAreNormalForms (L t m)  = ?lambda
-
--- >   normalFormsAreValues : (t : PCFTerm) -> {auto hnf : smallStep t = Nothing} -> exists (\v -> fromTerm t = Just v)
--- >   normalFormsAreValues = ?undefined2
