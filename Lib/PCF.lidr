@@ -1,6 +1,7 @@
 > module Lib.PCF
 >
 > import Data.List
+> import Data.Fin
 > import Lib.Existentials
 
 Terms for PCF
@@ -8,6 +9,7 @@ Terms for PCF
 
 PCF is a simple language that models computing. Its types are as follows.
 
+> public export
 > data PCFType = PCFBool
 >              | PCFNat
 >              | (~>) PCFType PCFType
@@ -28,42 +30,64 @@ We want our types to be comparable. This definition enforces unique readability.
 
 We begin by defining terms. We use de Bruijn indices to representent bound
 variables. This is an elegant way to deel with alpha-equivalence.
+We also keep track of (an upper bound on) free variables in the type;
+PCFTerm n encodes terms with at most n free variables
 
-> Var : Type
-> Var = Nat
+> ||| Var k is a De-Bruijn index less than k
+> public export 
+> Var : Nat -> Type
+> Var k = Fin k
 >
-> data PCFTerm = V Var                    -- variables
->              | C PCFTerm PCFTerm        -- composition / application
->              | L PCFType PCFTerm    -- lambda
->              | P PCFTerm PCFTerm        -- pairing
->              | P1 PCFTerm               -- first projection
->              | P2 PCFTerm               -- second projection
->              | T                        -- true
->              | F                        -- false
->              | Zero                     -- zero
->              | Succ PCFTerm             -- successor
->              | Pred PCFTerm             -- predecessor
->              | IsZero PCFTerm           
->              | IfThenElse PCFTerm PCFTerm PCFTerm
->              | Y PCFTerm                -- fixpoint / Y-combinator
->              | I                        -- unit value (*)
+> public export
+> data PCFTerm : Nat -> Type where 
+>     V   : Var k -> PCFTerm k                        -- variables
+>     C   : PCFTerm k -> PCFTerm k     -> PCFTerm k   -- application
+>     L   : PCFType   -> PCFTerm (S k) -> PCFTerm k   -- lambda
+>     P   : PCFTerm k -> PCFTerm k     -> PCFTerm k   -- pairing
+>     P1  : PCFTerm k -> PCFTerm k                    -- first projection
+>     P2  : PCFTerm k -> PCFTerm k                    -- second projection
+>     T   : PCFTerm k                                 -- true
+>     F   : PCFTerm k                                 -- false
+>     Zero : PCFTerm k                                -- zero value
+>     Succ : PCFTerm k -> PCFTerm k                   -- successor
+>     Pred : PCFTerm k -> PCFTerm k                   -- predecessor
+>     IsZero : PCFTerm k -> PCFTerm k                 -- is zero predicate
+>     IfThenElse : PCFTerm k -> PCFTerm k -> PCFTerm k -> PCFTerm k
+>     Y : PCFTerm (S k) -> PCFTerm k                  -- fixpoint / Y-combinator
+>     I : PCFTerm k                                   -- unit value (*)
+
+We also allow unicode lambda symbols for Lambda terms
+> λ : PCFType   -> PCFTerm (S k) -> PCFTerm k
+> λ = L
+
+
+
+
+Of special interest are the closed terms, those without any free variables
+
+> ClosedPCFTerm : Type
+> ClosedPCFTerm = PCFTerm 0
+
+
 
 The Y constructor returns a fixed-point of the given term. It is required to
 define functions by recursion. For example, the sum function on PCFNat is
 defined recursively.
 
-> sum : PCFTerm
-> sum = Y (L (PCFNat ~> (PCFNat ~> PCFNat)) (L PCFNat (L PCFNat (IfThenElse (IsZero (V 0)) (V 1) (Succ (C (C (V 2) (V 1)) (Pred (V 0))))))))
+> namespace SumExample
+>   public export sum : ClosedPCFTerm
+>   sum = Y (λ (PCFNat ~> (PCFNat ~> PCFNat)) (λ PCFNat (λ PCFNat (IfThenElse (IsZero (V 0)) (V 1) (Succ (C (C (V 2) (V 1)) (Pred (V 0))))))))
 
 Our goal here is to write a function that returns the type of any closed term
 
-> total typeOfClosed : PCFTerm -> Maybe PCFType
+> public export
+> total typeOfClosed : ClosedPCFTerm -> Maybe PCFType
 
 We are now able to define equality for terms. The important case is
 lambda-abstraction. We are using de Bruijn indices, which make comparing terms
 very easy.
 
-> implementation Eq PCFTerm where
+> implementation Eq (PCFTerm k) where
 >   V v              == V w              = v == w
 >   C m n            == C p q            = m == p && n == q
 >   L a m            == L b n            = a == b && m == n
@@ -84,6 +108,7 @@ very easy.
 In order to define small-step reduction, we must be able to substitute a term
 for a variable in another term. The following functions implement this.
 
+> public export
 > total substitute : PCFTerm -> PCFTerm -> Var -> PCFTerm
 
 The important cases are the variables and lambda-abstractions.
@@ -117,6 +142,7 @@ Reduction
 We can now define reduction. We begin with small-step reduction. Not all terms
 can reduce, it is thus important that the result is of type Maybe PCFTerm.
 
+> public export
 > total smallStep : PCFTerm -> Maybe PCFTerm
 > smallStep (Pred Zero)           = Just (Zero)
 > smallStep (Pred (Succ m))       = Just (m)
@@ -142,12 +168,13 @@ can reduce, it is thus important that the result is of type Maybe PCFTerm.
 > smallStep (IfThenElse p m n)    = do p' <- smallStep p
 >                                      Just (IfThenElse p' m n)
 > smallStep (Y m)                 = Just (C m (Y m))
-> smallStep m with (typeOfClosed m, m /= I)
->    _ | (Just U, True) = Just I
->    _ | (_, _)         = Nothing
+> smallStep m                     = if (typeOfClosed m == Just U && m /= I)
+>                                   then Just I
+>                                   else Nothing
 
 An important notion is a value, which is a term that cannot be reduced further.
 
+> public export
 > total isValue : PCFTerm -> Bool
 > isValue T        = True
 > isValue F        = True
@@ -279,48 +306,47 @@ Values and Normal Forms
 
 A certain subset of terms are called `values'
 
-> namespace Value
->   public export
->   data PCFValue = T 
->                 | F 
->                 | Zero 
->                 | Succ PCFValue
->                 | I
->                 | P PCFTerm PCFTerm
->                 | L PCFType PCFTerm
->
->   public export
->   fromTerm : PCFTerm -> Maybe PCFValue
->   fromTerm T          = Just T
->   fromTerm F          = Just F
->   fromTerm Zero       = Just Zero
->   fromTerm (Succ t)   = do v <- fromTerm t
->                            Just (Succ v)
->   fromTerm I          = Just I
->   fromTerm (P m n)    = Just (P m n)
->   fromTerm (L t m)  = Just (L t m)
->   fromTerm _          = Nothing
->
->   public export
->   toTerm : PCFValue -> PCFTerm
->   toTerm T          = T
->   toTerm F          = F
->   toTerm Zero       = Zero
->   toTerm (Succ v)   = Succ (toTerm v)
->   toTerm I          = I
->   toTerm (P m n)    = P m n
->   toTerm (L t m)  = L t m
 
-Values correspond exactly to terms that are in normal forms
 
->   valuesAreNormalForms : (v : PCFValue) -> smallStep (toTerm v) = Nothing
->   valuesAreNormalForms T        = Refl
->   valuesAreNormalForms F        = Refl
->   valuesAreNormalForms Zero     = Refl
->   -- valuesAreNormalForms Succ t = Refl 
->   -- valuesAreNormalForms Succ t = Refl
->   valuesAreNormalForms I        = Refl
->   valuesAreNormalForms (P m n)  = Refl
 
--- >   normalFormsAreValues : (t : PCFTerm) -> {auto hnf : smallStep t = Nothing} -> exists (\v -> fromTerm t = Just v)
--- >   normalFormsAreValues = ?undefined2
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
