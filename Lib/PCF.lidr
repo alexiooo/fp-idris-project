@@ -1,7 +1,7 @@
 > module Lib.PCF
 >
 > import Data.List
-> import Lib.Existentials
+  import Lib.Existentials   -- where is that library?
 
 Terms for PCF
 -------------
@@ -24,6 +24,7 @@ We want our types to be comparable. This definition enforces unique readability.
 >   PCFNat   == PCFNat   = True
 >   (a ~> b) == (c ~> d) = a == c && b == d
 >   (a * b)  == (c * d)  = a == c && b == d
+>   U        == U        = True
 >   _        == _        = False
 
 We begin by defining terms. We use de Bruijn indices to representent bound
@@ -43,7 +44,7 @@ variables. This is an elegant way to deel with alpha-equivalence.
 >              | Zero                     -- zero
 >              | Succ PCFTerm             -- successor
 >              | Pred PCFTerm             -- predecessor
->              | IsZero PCFTerm           
+>              | IsZero PCFTerm
 >              | IfThenElse PCFTerm PCFTerm PCFTerm
 >              | Y PCFTerm                -- fixpoint / Y-combinator
 >              | I                        -- unit value (*)
@@ -67,18 +68,21 @@ very easy.
 >   V v              == V w              = v == w
 >   C m n            == C p q            = m == p && n == q
 >   L a m            == L b n            = a == b && m == n
->   P m n            == P p q            = m == p && n == q
->   P1 m             == P1 n             = m == n
->   P2 m             == P2 n             = m == n
->   T                == T                = True
->   F                == F                = True
->   Zero             == Zero             = True
->   Succ m           == Succ n           = m == n
->   Pred m           == Pred n           = m == n
->   IsZero m         == IsZero n         = m == n
->   IfThenElse m n p == IfThenElse q r s = m == q && n == r && p == s
->   Y m              == Y n              = m == n
->   I                == I                = True
+
+The other cases are just as simple.
+
+<   P m n            == P p q            = m == p && n == q
+<   P1 m             == P1 n             = m == n
+<   P2 m             == P2 n             = m == n
+<   T                == T                = True
+<   F                == F                = True
+<   Zero             == Zero             = True
+<   Succ m           == Succ n           = m == n
+<   Pred m           == Pred n           = m == n
+<   IsZero m         == IsZero n         = m == n
+<   IfThenElse m n p == IfThenElse q r s = m == q && n == r && p == s
+<   Y m              == Y n              = m == n
+<   I                == I                = True
 >   _                == _                = False
 
 In order to define small-step reduction, we must be able to substitute a term
@@ -86,29 +90,56 @@ for a variable in another term. The following functions implement this.
 
 > total substitute : PCFTerm -> PCFTerm -> Var -> PCFTerm
 
+When substituting a term inside another, we might need to rename (increase)
+free variables. The following function does this.
+The depth argument keeps track of how many lambda's have been encoutered.
+
+> total incFreeVar : Nat -> PCFTerm -> PCFTerm
+> incFreeVar depth (V v)              = if v < depth
+>                                         then (V v)
+>                                       else (V (S v))
+> incFreeVar depth (L t m)            = L t (incFreeVar (S depth) m)
+
+The other cases are uninteresting, the increment function is just passed on.
+
+< incFreeVar depth (C m n)            = C (incFreeVar depth m) (incFreeVar depth n)
+< incFreeVar depth (P m n)            = P (incFreeVar depth m) (incFreeVar depth n)
+< incFreeVar depth (P1 m)             = P1 (incFreeVar depth m)
+< incFreeVar depth (P2 m)             = P2 (incFreeVar depth m)
+< incFreeVar depth T                  = T
+< incFreeVar depth F                  = F
+< incFreeVar depth Zero               = Zero
+< incFreeVar depth (Succ m)           = Succ (incFreeVar depth m)
+< incFreeVar depth (Pred m)           = Pred (incFreeVar depth m)
+< incFreeVar depth (IsZero m)         = IsZero (incFreeVar depth m)
+< incFreeVar depth (IfThenElse p m n) =
+<     IfThenElse (incFreeVar depth p) (incFreeVar depth m) (incFreeVar depth n)
+< incFreeVar depth (Y m)              = Y (incFreeVar depth m)
+< incFreeVar depth I                  = I
+
 The important cases are the variables and lambda-abstractions.
 
 > substitute (V w)              s v = if v == w
 >                                         then s
 >                                       else (V w)
-> substitute (L t m)            s v = L t (substitute m s (S v))
+> substitute (L t m)            s v = L t (substitute m (incFreeVar 0 s) (S v))
 
-All the other cases are straightforward.
+All the other cases are straightforward, once again, the substitution is just passed on.
 
-> substitute (C m n)            s v = C (substitute m s v) (substitute n s v)
-> substitute (P m n)            s v = P (substitute m s v) (substitute n s v)
-> substitute (P1 m)             s v = P1 (substitute m s v)
-> substitute (P2 m)             s v = P2 (substitute m s v)
-> substitute T                  s v = T
-> substitute F                  s v = F
-> substitute Zero               s v = Zero
-> substitute (Succ m)           s v = Succ (substitute m s v)
-> substitute (Pred m)           s v = Pred (substitute m s v)
-> substitute (IsZero m)         s v = IsZero (substitute m s v)
-> substitute (IfThenElse p m n) s v =
->     IfThenElse (substitute p s v) (substitute m s v) (substitute n s v)
-> substitute (Y m)              s v = Y (substitute m s v)
-> substitute I                  s v = I
+< substitute (C m n)            s v = C (substitute m s v) (substitute n s v)
+< substitute (P m n)            s v = P (substitute m s v) (substitute n s v)
+< substitute (P1 m)             s v = P1 (substitute m s v)
+< substitute (P2 m)             s v = P2 (substitute m s v)
+< substitute T                  s v = T
+< substitute F                  s v = F
+< substitute Zero               s v = Zero
+< substitute (Succ m)           s v = Succ (substitute m s v)
+< substitute (Pred m)           s v = Pred (substitute m s v)
+< substitute (IsZero m)         s v = IsZero (substitute m s v)
+< substitute (IfThenElse p m n) s v =
+<     IfThenElse (substitute p s v) (substitute m s v) (substitute n s v)
+< substitute (Y m)              s v = Y (substitute m s v)
+< substitute I                  s v = I
 
 
 Reduction
@@ -118,33 +149,40 @@ We can now define reduction. We begin with small-step reduction. Not all terms
 can reduce, it is thus important that the result is of type Maybe PCFTerm.
 
 > total smallStep : PCFTerm -> Maybe PCFTerm
-> smallStep (Pred Zero)           = Just (Zero)
-> smallStep (Pred (Succ m))       = Just (m)
-> smallStep (Pred m)              = do m' <- smallStep m
->                                      Just (Pred m')
-> smallStep (IsZero Zero)         = Just (T)
-> smallStep (IsZero (Succ m))     = Just (F)
-> smallStep (IsZero m)            = do m' <- smallStep m
->                                      Just (IsZero (m'))
-> smallStep (Succ m)              = do m' <- smallStep m
->                                      Just (Succ m')
+> smallStep (Pred Zero)           = Just Zero
+> smallStep (Pred (Succ m))       = Just m
+> smallStep (Pred m)              = do n <- smallStep m
+>                                      Just (Pred n)
+>
+> smallStep (IsZero Zero)         = Just T
+> smallStep (IsZero (Succ m))     = Just F
+> smallStep (IsZero m)            = do n <- smallStep m
+>                                      Just (IsZero (n))
+>
+> smallStep (Succ m)              = do n <- smallStep m
+>                                      Just (Succ n)
+>
 > smallStep (C (L _ m) n)         = Just (substitute m n 0)
-> smallStep (C m n)               = do m' <- smallStep m
->                                      Just (C m' n)
-> smallStep (P1 (P m _))          = Just (m)
-> smallStep (P2 (P _ n))          = Just (n)
-> smallStep (P1 m)                = do m' <- smallStep m
->                                      Just (P1 m')
-> smallStep (P2 m)                = do m' <- smallStep m
->                                      Just (P2 m')
-> smallStep (IfThenElse T m _)    = Just (m)
-> smallStep (IfThenElse F _ n)    = Just (n)
+> smallStep (C m p)               = do n <- smallStep m
+>                                      Just (C n p)
+>
+> smallStep (P1 (P m _))          = Just m
+> smallStep (P2 (P _ n))          = Just n
+> smallStep (P1 m)                = do n <- smallStep m
+>                                      Just (P1 n)
+> smallStep (P2 m)                = do n <- smallStep m
+>                                      Just (P2 n)
+>
+> smallStep (IfThenElse T m _)    = Just m
+> smallStep (IfThenElse F _ n)    = Just n
 > smallStep (IfThenElse p m n)    = do p' <- smallStep p
 >                                      Just (IfThenElse p' m n)
+>
 > smallStep (Y m)                 = Just (C m (Y m))
+>
 > smallStep m with (typeOfClosed m, m /= I)
->    _ | (Just U, True) = Just I
->    _ | (_, _)         = Nothing
+>             _ | (Just U, True)  = Just I
+>             _ | _               = Nothing
 
 An important notion is a value, which is a term that cannot be reduced further.
 
@@ -164,40 +202,31 @@ are the terms that cannot be reduced further.
 By successively applying small-step reductions, terms can reduce to values.
 This is the so called big-step reduction.
 
-> Environment : Type
-> Environment = List PCFTerm
->
-> partial evalEnv : Environment -> PCFTerm -> PCFTerm
-> evalEnv env T                  = T
-> evalEnv env F                  = F
-> evalEnv env Zero               = Zero
-> evalEnv env (P m n)            = (P m n)
-> evalEnv env (L t m)            = (L t m)
-> evalEnv env (Pred Zero)        = Zero
-> evalEnv env (Pred (Succ m))    = evalEnv env m
-> evalEnv env (Pred m)           = evalEnv env $ Pred (evalEnv env m)
-> evalEnv env (IsZero Zero)      = T
-> evalEnv env (IsZero (Succ m))  = F
-> evalEnv env (IsZero m)         = evalEnv env $ IsZero (evalEnv env m)
-> evalEnv env (Succ m)           = Succ (evalEnv env m)
-> evalEnv env (C (L t m) n)      = evalEnv (n::env) m
-> evalEnv env (C m n)            = evalEnv env $ C (evalEnv env m) n
-> evalEnv env (P1 (P m n))       = evalEnv env m
-> evalEnv env (P2 (P m n))       = evalEnv env n
-> evalEnv env (P1 m)             = evalEnv env $ P1 (evalEnv env m)
-> evalEnv env (P2 m)             = evalEnv env $ P2 (evalEnv env m)
-> evalEnv env (IfThenElse T m n) = evalEnv env m
-> evalEnv env (IfThenElse F m n) = evalEnv env n
-> evalEnv env (IfThenElse p m n) = evalEnv env $ IfThenElse (evalEnv env p) m n
-> evalEnv env (Y m)              = evalEnv env $ C m (Y m)      -- /!\ This can create infinite loops
-> evalEnv env (V v) with (inBounds v env)
->   evalEnv env (V v) | Yes _    = index v env
-> evalEnv env m with (typeOfClosed m)
->   evalEnv env m | Just U       = I
->
 > partial eval : PCFTerm -> PCFTerm
-> eval = evalEnv []
-
+> eval T                  = T
+> eval F                  = F
+> eval Zero               = Zero
+> eval (P m n)            = (P m n)
+> eval (L t m)            = (L t m)
+> eval (Pred Zero)        = Zero
+> eval (Pred (Succ m))    = m
+> eval (Pred m)           = Pred (eval m)
+> eval (IsZero Zero)      = T
+> eval (IsZero (Succ m))  = F
+> eval (IsZero m)         = IsZero (eval m)
+> eval (Succ m)           = Succ (eval m)
+> eval (C (L t m) n)      = eval (substitute m n 0)
+> eval (C m n)            = C (eval m) n
+> eval (P1 (P m _))       = eval m
+> eval (P2 (P _ n))       = eval n
+> eval (P1 m)             = P1 (eval m)
+> eval (P2 m)             = P2 (eval m)
+> eval (IfThenElse T m _) = eval m
+> eval (IfThenElse F _ n) = eval n
+> eval (IfThenElse p m n) = eval (IfThenElse (eval p) m n)
+> eval (Y m)              = eval (C m (Y m))
+> eval m with (typeOfClosed m)
+>        _ | Just U       = I
 
 
 Type Checking
@@ -281,9 +310,9 @@ A certain subset of terms are called `values'
 
 > namespace Value
 >   public export
->   data PCFValue = T 
->                 | F 
->                 | Zero 
+>   data PCFValue = T
+>                 | F
+>                 | Zero
 >                 | Succ PCFValue
 >                 | I
 >                 | P PCFTerm PCFTerm
@@ -298,7 +327,7 @@ A certain subset of terms are called `values'
 >                            Just (Succ v)
 >   fromTerm I          = Just I
 >   fromTerm (P m n)    = Just (P m n)
->   fromTerm (L t m)  = Just (L t m)
+>   fromTerm (L t m)    = Just (L t m)
 >   fromTerm _          = Nothing
 >
 >   public export
@@ -317,10 +346,10 @@ Values correspond exactly to terms that are in normal forms
 >   valuesAreNormalForms T        = Refl
 >   valuesAreNormalForms F        = Refl
 >   valuesAreNormalForms Zero     = Refl
->   -- valuesAreNormalForms Succ t = Refl 
->   -- valuesAreNormalForms Succ t = Refl
+>   valuesAreNormalForms (Succ t) = ?succ
 >   valuesAreNormalForms I        = Refl
->   valuesAreNormalForms (P m n)  = Refl
+>   valuesAreNormalForms (P m n)  = ?pair
+>   valuesAreNormalForms (L t m)  = ?lambda
 
 -- >   normalFormsAreValues : (t : PCFTerm) -> {auto hnf : smallStep t = Nothing} -> exists (\v -> fromTerm t = Just v)
 -- >   normalFormsAreValues = ?undefined2
