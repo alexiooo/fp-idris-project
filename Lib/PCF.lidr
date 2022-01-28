@@ -2,9 +2,8 @@
 >
 > import Data.List
 > import Data.Vect
-> import Data.Fin
+> import public Data.Fin  -- needed publically, since we publically export types that reference Fin
 > import Data.DPair
-> import Lib.DSL
 
 Terms for PCF
 -------------
@@ -64,21 +63,8 @@ The Y constructor returns a fixed-point of the given term. It is required to
 define functions by recursion. For example, the sum function on PCFNat is
 defined recursively.
 
-As an aside, the Lib.DSL module allows us to write PCF terms using more familiar notation, such as
-  * using λ instead of L for lambda abstraction
-  * writing if' p (then' m) (else' n)
-  * using nat' and bool' as types
-Note the ' marks, which differentiate the embedded PCF notation from Idris
-Still, it is merely sugar for PCFTerm, so it is only relevant for making nicer reading code
+### Include SumExample.lidr here?
 
-> namespace SumExample
->   public export sum : PCFTerm 0
->   sum = Y (λ (nat' ~> (nat' ~> nat')) 
->             (λ nat' 
->               (λ nat' 
->                 (if' (IsZero (V 0)) 
->                   (then' (V 1))
->                   (else' (Succ (C (C (V 2) (V 1)) (Pred (V 0)))))))))
 
 Of special interest are the closed terms, those without any free variables
 

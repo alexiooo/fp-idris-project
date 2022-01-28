@@ -3,6 +3,8 @@
 ||| DSL allows us to write PCF terms using more familiar notation, such as
 |||   * using λ instead of L for lambda abstraction
 |||   * writing if' p (then' m) (else' n)
+|||   * using nat' and bool' as types
+||| Note the ' marks, which differentiate the embedded PCF notation from Idris
 module Lib.DSL
 
 import Lib.PCF
@@ -10,6 +12,14 @@ import Lib.PCF
 public export
 λ : PCFType -> PCFTerm (S k) -> PCFTerm k
 λ = L
+
+infix 6 .
+
+public export
+(.) : PCFTerm k -> PCFTerm k -> PCFTerm k
+(.) = C
+
+
 
 public export
 data Then : Nat -> Type where
