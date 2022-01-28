@@ -1,6 +1,7 @@
 > module Lib.PCF
 >
 > import Data.List
+> import Lib.Existentials
 
 Terms for PCF
 -------------
@@ -27,23 +28,24 @@ We want our types to be comparable. This definition enforces unique readability.
 
 We begin by defining terms.
 
+> Var : Type
 > Var = String
 >
-> data PCFTerm = V Var
->              | C PCFTerm PCFTerm
->              | L Var PCFType PCFTerm
->              | P PCFTerm PCFTerm
->              | P1 PCFTerm
->              | P2 PCFTerm
->              | T
->              | F
->              | Zero
->              | Succ PCFTerm
->              | Pred PCFTerm
->              | IsZero PCFTerm
+> data PCFTerm = V Var                    -- variables
+>              | C PCFTerm PCFTerm        -- composition / application
+>              | L Var PCFType PCFTerm    -- lambda
+>              | P PCFTerm PCFTerm        -- pairing
+>              | P1 PCFTerm               -- first projection
+>              | P2 PCFTerm               -- second projection
+>              | T                        -- true
+>              | F                        -- false
+>              | Zero                     -- zero
+>              | Succ PCFTerm             -- successor
+>              | Pred PCFTerm             -- predecessor
+>              | IsZero PCFTerm           
 >              | IfThenElse PCFTerm PCFTerm PCFTerm
->              | Y PCFTerm
->              | I
+>              | Y PCFTerm                -- fixpoint / Y-combinator
+>              | I                        -- unit value (*)
 
 The Y constructor returns a fixed-point of the given term. It is required to
 define functions by recursion. For examplen the sum function on PCFNat is
@@ -183,6 +185,7 @@ This is the so called big-step reduction.
 >   eval   m | Just U       = I
 >   eval   m | _            = m
 
+
 Type Checking
 -------------
 
@@ -190,6 +193,7 @@ We are now ready to define a type infering function. Such a function takes as
 arguments a context and a term, and return a type if the term is typeable in
 the given context, or Nothing otherwise.
 
+> Context : Type
 > Context = List (Var, PCFType)
 
 > typeOf : Context -> PCFTerm                             -> Maybe PCFType
@@ -252,3 +256,55 @@ the given context, or Nothing otherwise.
 We can now infer the type of closed terms.
 
 > typeOfClosed = typeOf []
+
+
+Values and Normal Forms
+-------------
+
+A certain subset of terms are called `values'
+
+> namespace Value
+>   public export
+>   data PCFValue = T 
+>                 | F 
+>                 | Zero 
+>                 | Succ PCFValue
+>                 | I
+>                 | P PCFTerm PCFTerm
+>                 | L Var PCFType PCFTerm
+>
+>   public export
+>   fromTerm : PCFTerm -> Maybe PCFValue
+>   fromTerm T          = Just T
+>   fromTerm F          = Just F
+>   fromTerm Zero       = Just Zero
+>   fromTerm (Succ t)   = do v <- fromTerm t
+>                            Just (Succ v)
+>   fromTerm I          = Just I
+>   fromTerm (P m n)    = Just (P m n)
+>   fromTerm (L v t m)  = Just (L v t m)
+>   fromTerm _          = Nothing
+>
+>   public export
+>   toTerm : PCFValue -> PCFTerm
+>   toTerm T          = T
+>   toTerm F          = F
+>   toTerm Zero       = Zero
+>   toTerm (Succ v)   = Succ (toTerm v)
+>   toTerm I          = I
+>   toTerm (P m n)    = P m n
+>   toTerm (L v t m)  = L v t m
+
+Values correspond exactly to terms that are in normal forms
+
+>   valuesAreNormalForms : (v : PCFValue) -> smallStep (toTerm v) = Nothing
+>   valuesAreNormalForms T        = Refl
+>   valuesAreNormalForms F        = Refl
+>   valuesAreNormalForms Zero     = Refl
+>   -- valuesAreNormalForms Succ t   = Refl
+>   -- valuesAreNormalForms Succ t = Refl
+>   valuesAreNormalForms I        = Refl
+>   valuesAreNormalForms (P m n)  = Refl
+
+-- >   normalFormsAreValues : (t : PCFTerm) -> {auto hnf : smallStep t = Nothing} -> exists (\v -> fromTerm t = Just v)
+-- >   normalFormsAreValues = ?undefined2
