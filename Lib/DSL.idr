@@ -29,7 +29,7 @@ public export
 λ : PCFType -> PCFTerm (S k) -> PCFTerm k
 λ = L
 
-infix 6 .
+infixl 6 .
 
 public export
 (.) : PCFTerm k -> PCFTerm k -> PCFTerm k
@@ -57,11 +57,10 @@ public export
 else' : PCFTerm k -> Else k
 else' = Else'
 
-public export 
+public export
 nat' : PCFType
 nat' = PCFNat
 
-public export 
+public export
 bool' : PCFType
 bool' = PCFBool
-

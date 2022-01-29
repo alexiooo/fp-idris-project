@@ -12,13 +12,13 @@
 ### Include Lib.Type here
 
 In order to define small-step reduction, we must be able to substitute a term
-for a variable in another term. 
+for a variable in another term.
 We only allow the maximal variable, indicated k in the following signature, to be substituted,
 so that we can decrease that upper bound by one for the return type and maintain a sharp upper bound.
 
 When substituting a term inside another, we might need to rename (increase)
 free variables. The following function does this.
-The depth argument keeps track of how many lambda's have been encoutered, 
+The depth argument keeps track of how many lambda's have been encoutered,
 while the types reflect that the upper bound on free variables also increases.
 
 Because of the totality checker, we have to give a *Vect version of the function as well, following 
@@ -47,7 +47,7 @@ We try to strengthen (i.e., decrement) the bound on the variable index.
 The only reason for this to fail is if the index is already at the upper bound; if w == k, thus
 if strengthening fails, we should substitute
 
-> substitute (V w) s =  case Fin.strengthen w of 
+> substitute (V w) s =  case Fin.strengthen w of
 >                         Nothing => s
 >                         Just w' => V w'
 
@@ -102,11 +102,10 @@ can reduce, it is thus important that the result is of type Maybe PCFTerm.
 >
 > smallStep (Y m)                 = Just (C m (Y m))
 >
-> smallStep m = if (m /= I && (tryClose m >>= typeOfClosed) == Just U) 
+> smallStep m = if (m /= I && (tryClose m >>= typeOfClosed) == Just U)
 >               then Just I
 >               else Nothing
 
-An important notion is a value, which is a term that cannot be reduced further.
 
 ### Include Lib.Values here
 
