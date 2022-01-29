@@ -56,10 +56,11 @@ A certain subset of terms are called `values'
 Values correspond exactly to terms that are in normal forms
 
 >   valuesAreNormalForms : (v : PCFValue 0) -> smallStep (toTerm v) = Nothing
->   valuesAreNormalForms T        = ?t
->   valuesAreNormalForms F        = ?f
->   valuesAreNormalForms Zero     = ?zero
->   valuesAreNormalForms (Succ t) = ?succ
+>   valuesAreNormalForms T        = Refl
+>   valuesAreNormalForms F        = Refl
+>   valuesAreNormalForms Zero     = Refl
+>   valuesAreNormalForms (Succ t) = rewrite (valuesAreNormalForms t)
+>                                   in Refl
 >   valuesAreNormalForms I        = Refl
 >   valuesAreNormalForms (P m n)  = ?pair
 >   valuesAreNormalForms (L t m)  = ?lambda
