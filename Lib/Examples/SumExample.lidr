@@ -22,4 +22,4 @@ reading PCF code
 > sum = Y (λ (nat' ~> (nat' ~> nat')) $ λ nat' $ λ nat' $
 >               (if' (IsZero (V 0)) 
 >                 (then' (V 1))
->                 (else' (Succ (C (C (V 2) (V 1)) (Pred (V 0)))))))
+>                 (else' (Succ ((V 2) . (V 1) . (Pred (V 0)))))))

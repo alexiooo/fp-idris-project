@@ -1,5 +1,5 @@
 
-< module Lib.Type
+< module Lib.Types
 < 
 < import Lib.Terms
 < import Lib.Util
@@ -38,7 +38,7 @@ enter an infinite loop
 
 > typeOf con (V v)      = Just (index v con)
 > typeOf con (L t m)    = typeOf (t::con) m >>= Just . ( t ~> )
-> typeOf con (S s args) = case ( s,  !(typeOfVect con args) ) of
+> typeOf con (S s ms)   = case ( s,  !(typeOfVect con ms) ) of
 >   (IfElse,  [PCFBool, a, b])  => if a == b then Just a
 >                                            else Nothing
 >   (App,     [(a ~> b), c])    => if a == c then Just b 

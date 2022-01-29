@@ -71,23 +71,15 @@ Type checking now means to translate a PCFTerm to a TypedTerm
 < public export
 > typeCheck : (con : Context k) -> PCFTerm k -> Maybe (TypedTerm con)
 
+
+< public export
+> total typeCheckVect : Context k -> Vect n (PCFTerm k) -> Maybe (Vect n PCFType)
+> typeCheckVect x (y :: ys) = [| (typeCheck x y) :: (typeCheckVect x ys) |]
+> typeCheckVect _ []        = Just []
+
 < JustT : (type : PCFType) -> WFTerm con type -> Maybe (TypedTerm con)
 < JustT type term = Just (MkTypedTerm type term)
 
-> typeCheck c (V v)   = JustT (index v c) (V v) 
-> typeCheck c (C x y) = case (typeCheck c x, typeCheck c y) of
->                         (JustT _ (t1 ~> t2), JustT _ t1) => JustT (C x y) t2
->                                                        _ => Nothing
-> typeCheck c (L t m) = ?typeCheck_rhs_3
-> typeCheck c (P x y) = ?typeCheck_rhs_4
-> typeCheck c (P1 x) = ?typeCheck_rhs_5
-> typeCheck c (P2 x) = ?typeCheck_rhs_6
-> typeCheck c T = ?typeCheck_rhs_7
-> typeCheck c F = ?typeCheck_rhs_8
-> typeCheck c Zero = ?typeCheck_rhs_9
-> typeCheck c (Succ x) = ?typeCheck_rhs_10
-> typeCheck c (Pred x) = ?typeCheck_rhs_11
-> typeCheck c (IsZero x) = ?typeCheck_rhs_12
-> typeCheck c (IfElse x y z) = ?typeCheck_rhs_13
-> typeCheck c (Y x) = ?typeCheck_rhs_14
-> typeCheck c I = ?typeCheck_rhs_15
+> typeCheck con (V v)    = JustT (index v c) (V v) 
+> typeCheck con (L t m)  = ?typeCheck_rhs_3
+> typeCheck con (S s ms) = case ( s,  !(typeCheckVect con args) ) of
