@@ -1,32 +1,16 @@
-> module Lib.Terms
->
-> import public Data.Fin  -- needed publically, since we publically export types that reference Fin
-> import public Data.Vect
+< module Lib.Terms
+<
+< import public Lib.Types
+<
+< import public Data.Fin  -- needed publically, since we publically export types that reference Fin
+< import public Data.Vect
 
 Terms for PCF
 -------------
 
 PCF is a simple language that models computing. Its types are as follows.
 
-< public export
-> data PCFType = PCFBool
->              | PCFNat
->              | PCFUnit
->              | (~>) PCFType PCFType
->              | (*) PCFType PCFType
->
-> infixr 10 ~>
-
-We want our types to be comparable. This definition enforces unique readability.
-
-< public export
-> implementation Eq PCFType where
->   PCFBool  == PCFBool  = True
->   PCFNat   == PCFNat   = True
->   PCFUnit  == PCFUnit  = True
->   (a ~> b) == (c ~> d) = a == c && b == d
->   (a * b)  == (c * d)  = a == c && b == d
->   _        == _        = False
+### Include Lib.Types here
 
 We begin by defining terms. We use de Bruijn indices to representent bound
 variables. This is an elegant way to deel with alpha-equivalence.

@@ -1,8 +1,9 @@
 < module Lib.TypedTerms
 <
-< import Lib.PCF
+< import Lib.Types
+< import Lib.Types.TypeOf
+< import Lib.Types.DecEq
 < import Data.DPair
-< import Lib.Terms.DecEq
 
 Well-Typed Terms
 -------------
@@ -80,15 +81,15 @@ Type checking now means to translate a PCFTerm to a TypedTerm
 
 > typeCheck con (V v)    = JustT (V v) 
 > typeCheck con (L t m)  = ?typeCheck_rhs_3
-
--- > typeCheck con (S s ms) with (s, typeCheckVect con ms)
--- >   _ | (IfElse, [(PCFBool ** p), (a ** m), (b ** n)]) => Nothing
--- >   _ | _ => Nothing
-
-
 > typeCheck con (S s ms) = case ( s,  !(typeCheckVect con ms) ) of
->   (IfElse,  [(PCFBool ** p), (a ** m), (a ** n)]) => JustT (IfElse p m n)
->   (App,     [((a ~> b) ** m), (a ** n)])          => JustT (App m n)
+>   (IfElse,  [(PCFBool ** p), (a ** m), (b ** n)]) 
+>       => case (decEq a b) of
+>             Yes eq => let n = (rewrite eq in n) in JustT (IfElse p m n)
+>             No  _  => Nothing
+>   (App,     [((a ~> b) ** m), (c ** n)])
+>       => case (decEq a c) of
+>             Yes eq => let n = (rewrite eq in n) in JustT (App m n)
+>             No  _  => Nothing
 >   (Pair,    [(_ ** m), (_ ** n)] )  => JustT (Pair m n)
 >   (Fst,     [((_ * _) ** m)])       => JustT (Fst m)
 >   (Snd,     [((_ * _) ** m)])       => JustT (Snd m)
@@ -100,3 +101,4 @@ Type checking now means to translate a PCFTerm to a TypedTerm
 >   (Zero,    [])                     => JustT Zero
 >   (Unit,    [])                     => JustT Unit
 >   (_, _)                            => Nothing
+
