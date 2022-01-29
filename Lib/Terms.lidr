@@ -14,8 +14,7 @@ PCF is a simple language that models computing. Its types are as follows.
 >              | (*) PCFType PCFType
 >              | U
 >
-> infixr 0 ~>
-> infixr 0 *
+> infixr 10 ~>
 
 We want our types to be comparable. This definition enforces unique readability.
 
@@ -34,12 +33,12 @@ We also keep track of (an upper bound on) free variables in the type;
 PCFTerm n encodes terms with at most n free variables
 
 > ||| Var k is a De-Bruijn index less than k
-< public export 
+< public export
 > Var : Nat -> Type
 > Var = Fin
 >
 < public export
-> data PCFTerm : Nat -> Type where 
+> data PCFTerm : Nat -> Type where
 >     V    : Var k -> PCFTerm k                        -- variables
 >     C    : PCFTerm k -> PCFTerm k     -> PCFTerm k   -- application
 >     L    : PCFType   -> PCFTerm (S k) -> PCFTerm k   -- lambda
@@ -66,6 +65,4 @@ The Y constructor returns a fixed-point of the given term. It is required to
 define functions by recursion. For example, the sum function on PCFNat is
 defined recursively.
 
-### Include SumExample.lidr here?
-
-
+### Include SumExample.lidr here?  Use \begin{showCode} so it doesn't compile.
