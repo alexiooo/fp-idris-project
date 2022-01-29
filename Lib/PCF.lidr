@@ -13,7 +13,7 @@
 
 Remember that the type only gives an upper bound, so an inhabitant of say PCFType 3 might still
 be closed. The following will try to strengthen any such term.
-This really is just a wrapper around Fin.strengthen, with straightforward recursive cases, so we 
+This really is just a wrapper around Fin.strengthen, with straightforward recursive cases, so we
 detail only variables and lambdas.
 
 > strengthen : {k :_} -> PCFTerm (S k) -> Maybe (PCFTerm k)
@@ -39,9 +39,9 @@ detail only variables and lambdas.
 
 > public export
 > tryClose : {k:_} -> PCFTerm k -> Maybe ClosedPCFTerm
-> tryClose {k} t = case k of 
+> tryClose {k} t = case k of
 >                   0      => Just t
->                   (S k') => strengthen t >>= tryClose 
+>                   (S k') => strengthen t >>= tryClose
 
 We are now able to define equality for terms. The important case is
 lambda-abstraction. We are using de Bruijn indices, which make comparing terms
@@ -69,7 +69,7 @@ The other cases are just as simple.
 >   _                == _                = False
 
 In order to define small-step reduction, we must be able to substitute a term
-for a variable in another term. 
+for a variable in another term.
 We only allow the maximal variable, indicated k in the following signature, to be substituted,
 so that we can decrease that upper bound by one for the return type and maintain a sharp upper bound.
 
@@ -80,7 +80,7 @@ The following functions implement this.
 
 When substituting a term inside another, we might need to rename (increase)
 free variables. The following function does this.
-The depth argument keeps track of how many lambda's have been encoutered, 
+The depth argument keeps track of how many lambda's have been encoutered,
 while the types reflect that the upper bound on free variables also increases.
 
 > total incFreeVar : (n : Nat) -> PCFTerm k -> PCFTerm (S k)
@@ -112,7 +112,7 @@ We try to strengthen (i.e., decrement) the bound on the variable index.
 The only reason for this to fail is if the index is already at the upper bound; if w == k, thus
 if strengthening fails, we should substitute
 
-> substitute (V w) s =  case Fin.strengthen w of 
+> substitute (V w) s =  case Fin.strengthen w of
 >                         Nothing => s
 >                         Just w' => V w'
 
@@ -178,22 +178,9 @@ can reduce, it is thus important that the result is of type Maybe PCFTerm.
 >
 > smallStep (Y m)                 = Just (C m (Y m))
 >
-> smallStep m = if (m /= I && (tryClose m >>= typeOfClosed) == Just U) 
+> smallStep m = if (m /= I && (tryClose m >>= typeOfClosed) == Just U)
 >               then Just I
 >               else Nothing
-
-An important notion is a value, which is a term that cannot be reduced further.
-
-> public export
-> total isValue : PCFTerm k -> Bool
-> isValue T        = True
-> isValue F        = True
-> isValue Zero     = True
-> isValue (Succ m) = isValue m
-> isValue (P m n)  = True
-> isValue (L t m)  = True
-> isValue I        = True
-> isValue _        = False
 
 Values are exactly the normal forms for small-step reduction, that is, values
 are the terms that cannot be reduced further.
@@ -227,8 +214,3 @@ This is the so called big-step reduction.
 > eval (Y m)              = eval (C m (Y m))
 > eval m with (typeOfClosed m)
 >        _ | Just U       = I
-
-
-
-
-

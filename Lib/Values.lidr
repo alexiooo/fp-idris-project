@@ -33,6 +33,17 @@ A certain subset of terms are called `values'
 >   fromTerm _          = Nothing
 >
 >   public export
+>   total isValue : PCFTerm k -> Bool
+>   isValue T        = True
+>   isValue F        = True
+>   isValue Zero     = True
+>   isValue (Succ m) = isValue m
+>   isValue (P m n)  = True
+>   isValue (L t m)  = True
+>   isValue I        = True
+>   isValue _        = False
+
+>   public export
 >   toTerm : PCFValue k -> PCFTerm k
 >   toTerm T          = T
 >   toTerm F          = F
