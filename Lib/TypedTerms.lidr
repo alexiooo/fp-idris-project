@@ -80,7 +80,7 @@ Type checking now means to translate a PCFTerm to a TypedTerm
 < JustT m = Just (type ** m)
 
 > typeCheck con (V v)    = JustT (V v) 
-> typeCheck con (L t m)  = ?typeCheck_rhs_3
+> typeCheck con (L t m)  = JustT (L t (snd !(typeCheck (t::con) m) ))
 > typeCheck con (S s ms) = case ( s,  !(typeCheckVect con ms) ) of
 >   (IfElse,  [(PCFBool ** p), (a ** m), (b ** n)]) 
 >       => case (decEq a b) of
@@ -102,3 +102,12 @@ Type checking now means to translate a PCFTerm to a TypedTerm
 >   (Unit,    [])                     => JustT Unit
 >   (_, _)                            => Nothing
 
+> typeOf : TypedTerm k -> PCFType
+> typeOf = fst
+
+
+Now we have two notions of typeability: the original typeOf function and this new typeCheck function.
+We can prove that both notions coincide.
+
+> typeOfMatchesCheck : (con : Context k) -> (m : PCFTerm k) 
+>                         -> (typeOf con m) = (typeCheck con m >>= Just . TypedTerms.typeOf)
