@@ -126,6 +126,7 @@ We are now able to define equality for terms. The important case is
 lambda-abstraction. We are using de Bruijn indices, which make comparing terms
 very easy.
 
+< public export
 > implementation Eq (PCFTerm k) where
 >   -- Trivial implementation omitted
 <   V v         == V w        = v == w

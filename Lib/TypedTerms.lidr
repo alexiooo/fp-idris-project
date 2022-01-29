@@ -1,8 +1,8 @@
 < module Lib.TypedTerms
 <
-< import Lib.Types
-< import Lib.Types.TypeOf
-< import Lib.Types.DecEq
+< import public Lib.Types
+< import public Lib.Types.TypeOf
+< import public Lib.Types.DecEq
 < import Data.DPair
 
 Well-Typed Terms

@@ -2,7 +2,11 @@
 < module Lib.Reduction
 <
 < import Lib.Terms
+< import Lib.Types
+< import Lib.TypedTerms
 < import Lib.Substitute
+<
+< %default total
 
 
 Reduction
@@ -12,46 +16,44 @@ We can now define reduction. We begin with small-step reduction. Not all terms
 can reduce, it is thus important that the result is of type Maybe PCFTerm.
 
 < public export
-> total smallStep    : PCFTerm k -> Maybe (PCFTerm k)
-< public export
-> total smallStepSym : Symbol ar -> Vect ar (PCFTerm k) -> Maybe (PCFTerm k)
+> smallStep    : {k : _} -> PCFTerm k -> Maybe (PCFTerm k)
 
-> smallStep (S s ms) = smallStepSym s ms
-> smallStep m = if (m /= (S Unit) && (tryClose m >>= typeOfClosed) == Just U)
->               then Just I
->               else Nothing
+Neither variables nor top-level lambdas are reducable, so we restrict attention to the symbols
 
-> smallStep (Pred Zero)           = Just Zero
-> smallStep (Pred (Succ m))       = Just m
-> smallStep (Pred m)              = do n <- smallStep m
->                                      Just (Pred n)
->
-> smallStep (IsZero Zero)         = Just T
-> smallStep (IsZero (Succ m))     = Just F
-> smallStep (IsZero m)            = do n <- smallStep m
->                                      Just (IsZero (n))
->
-> smallStep (Succ m)              = do n <- smallStep m
->                                      Just (Succ n)
->
-> smallStep (C (L _ m) n)         = Just (substitute m n)
-> smallStep (C m p)               = do n <- smallStep m
->                                      Just (C n p)
->
-> smallStep (P1 (P m _))          = Just m
-> smallStep (P2 (P _ n))          = Just n
-> smallStep (P1 m)                = do n <- smallStep m
->                                      Just (P1 n)
-> smallStep (P2 m)                = do n <- smallStep m
->                                      Just (P2 n)
->
-> smallStep (IfElse T m _)    = Just m
-> smallStep (IfElse F _ n)    = Just n
-> smallStep (IfElse p m n)    = do p' <- smallStep p
->                                  Just (IfElse p' m n)
->
-> smallStep (Y m)                 = Just (C m (Y m))
->
+
+> smallStep (S s arg) = ssSym s arg where 
+>   JustS : Symbol ar -> Vect ar (PCFTerm k) -> Maybe (PCFTerm k)
+>   JustS s arg = Just $ S s arg
+>   ssSym : Symbol ar -> Vect ar (PCFTerm k) -> Maybe (PCFTerm k)
+
+We start with the top-level reducts
+
+>   ssSym Pred [S Zero []]      = JustS Zero _
+>   ssSym Pred [S Succ [m]]     = Just m
+
+>   ssSym IsZero [S Zero _]     = JustS T _
+>   ssSym IsZero [S Succ _]     = JustS F _
+> 
+>   ssSym App [(L _ m), n]      = Just (substitute m n)
+> 
+>   ssSym Fst [S Pair [m, _]]   = Just m
+>   ssSym Snd [S Pair [_, n]]   = Just n
+> 
+>   ssSym IfElse [S T _, m, _]  = Just m
+>   ssSym IfElse [S F _, _, n]  = Just n
+> 
+>   ssSym Y [m]                 = Just (S App [m, (S Y [m])])
+
+If a term had no top-level reducts, then we try to reduce the first argument.
+Alternatively, if the term is a nullary symbol and of the unit type, we reduce it to the unit value
+
+>   ssSym s (m::ms)             = JustS s (!(smallStep m) :: ms)
+>   ssSym s arg = let m = (S s arg) in
+>                      if (m /= (S Unit _) && (tryClose m >>= typeOfClosed) == Just PCFUnit)
+>                         then Just (S Unit [])
+>                         else Nothing
+
+> smallStep _         = Nothing
 
 
 
@@ -64,7 +66,7 @@ By successively applying small-step reductions, terms can reduce to values.
 This is the so called big-step reduction.
 
 > public export
-> partial eval : ClosedPCFTerm -> ClosedPCFTerm
+> partial eval : ClosedTypedTerm -> ClosedTypedTerm
 > eval T                  = T
 > eval F                  = F
 > eval Zero               = Zero
