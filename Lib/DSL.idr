@@ -4,26 +4,42 @@
 |||   * using λ instead of L for lambda abstraction
 |||   * writing if' p (then' m) (else' n)
 |||   * using nat' and bool' as types
+|||   * using curried versions of the constructors
 ||| Note the ' marks, which differentiate the embedded PCF notation from Idris
 module Lib.DSL
 
-import Lib.PCF
+import Lib.Terms
 
---     V    : Var k -> PCFTerm k                        -- variables
---     C    : PCFTerm k -> PCFTerm k     -> PCFTerm k   -- application
---     L    : PCFType   -> PCFTerm (S k) -> PCFTerm k   -- lambda
---     P    : PCFTerm k -> PCFTerm k     -> PCFTerm k   -- pairing
---     P1   : PCFTerm k -> PCFTerm k                    -- first projection
---     P2   : PCFTerm k -> PCFTerm k                    -- second projection
---     T    : PCFTerm k                                 -- true
---     F    : PCFTerm k                                 -- false
---     Zero : PCFTerm k                                -- zero value
---     Succ : PCFTerm k -> PCFTerm k                   -- successor
---     Pred : PCFTerm k -> PCFTerm k                   -- predecessor
---     IsZero : PCFTerm k -> PCFTerm k                 -- is zero predicate
---     IfElse : PCFTerm k -> PCFTerm k -> PCFTerm k -> PCFTerm k
---     Y : PCFTerm k -> PCFTerm k                      -- fixpoint / Y-combinator
---     I : PCFTerm k                                   -- unit value (*)
+
+public export IfElse : PCFTerm k -> PCFTerm k -> PCFTerm k -> PCFTerm k
+public export App    : PCFTerm k -> PCFTerm k -> PCFTerm k   -- application
+public export Pair   : PCFTerm k -> PCFTerm k -> PCFTerm k   -- pairing
+public export Fst    : PCFTerm k -> PCFTerm k                    -- first projection
+public export Snd    : PCFTerm k -> PCFTerm k                    -- second projection
+public export Succ   : PCFTerm k -> PCFTerm k                   -- successor
+public export Pred   : PCFTerm k -> PCFTerm k                   -- predecessor
+public export IsZero : PCFTerm k -> PCFTerm k                 -- is zero predicate
+public export Y      : PCFTerm k -> PCFTerm k                      -- fixpoint / Y-combinator
+public export T      : PCFTerm k                                 -- true
+public export F      : PCFTerm k                                 -- false
+public export Zero   : PCFTerm k                                -- zero value
+public export Unit   : PCFTerm k                                   -- unit value (*)
+
+IfElse p m n = S IfElse [p, m, n]
+App    m n = S App    [m, n]
+Pair   m n = S Pair   [m, n]
+Fst    m   = S Fst    [m]
+Snd    m   = S Snd    [m]
+Succ   m   = S Succ   [m]
+Pred   m   = S Pred   [m]
+IsZero m   = S IsZero [m]
+Y      m   = S Y      [m]
+T = S T []
+F = S F []
+Zero = S Zero []
+Unit = S Unit []
+
+
 
 public export
 λ : PCFType -> PCFTerm (S k) -> PCFTerm k
@@ -33,7 +49,7 @@ infixl 6 .
 
 public export
 (.) : PCFTerm k -> PCFTerm k -> PCFTerm k
-(.) = C
+(.) = App
 
 
 
@@ -47,7 +63,7 @@ data Else : Nat -> Type where
 
 public export
 if' : PCFTerm k -> Then k -> Else k -> PCFTerm k
-if' p (Then' m) (Else' n) = IfElse p m n
+if' p (Then' m) (Else' n) = S IfElse [p, m, n]
 
 public export
 then' : PCFTerm k -> Then k
@@ -64,3 +80,7 @@ nat' = PCFNat
 public export
 bool' : PCFType
 bool' = PCFBool
+
+public export
+unit' : PCFType
+unit' = PCFUnit
