@@ -7,5 +7,5 @@ import Lib.Terms
 
 public export
 JustS : Symbol ar -> Vect ar (PCFTerm k) -> Maybe (PCFTerm k)
-JustS s arg = Just $ S s arg
+JustS s arg = Just $ Terms.S s arg
 

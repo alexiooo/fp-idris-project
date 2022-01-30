@@ -7,6 +7,8 @@
 < import Lib.Substitute
 < import Lib.Util
 <
+< import Data.Fuel
+<
 < %default total
 
 
@@ -70,28 +72,36 @@ are the terms that cannot be reduced further.
 By successively applying small-step reductions, terms can reduce to values.
 This is the so called big-step reduction.
 
+Not all PCFTerms evaluate to a Value, some may enter an infinite loop.
+To still define eval as a total function, we supply it with some `fuel'. This fuel acts as an upper
+bound on computation steps. The function will only return Nothing if this upper bound was reached
+
 < public export
-> partial eval : ClosedPCFTerm -> ClosedPCFTerm
-> eval (L t m)        = L t m
-> eval (S Pair ms)    = S Pair ms
-> eval (S Y [m])      = eval (S App [m, S Y [m]])
-> eval (S IfElse [p, m, n]) = case (eval p) of
->                               (S T []) => eval m
->                               (S F []) => eval n
->                               p'       => (S IfElse [p', m, n])
-> eval (S s [])         = (S s [])  -- constants eval to themselves
-> eval (S s (m :: ms))  = evSym s (eval m :: ms) where
->   evSym : Symbol ar -> Vect ar ClosedPCFTerm -> ClosedPCFTerm
->   evSym Pred    [S Zero _]    = S Zero []
->   evSym Pred    [S Succ [m]]  = m
->   evSym IsZero  [S Zero _]    = S T []
->   evSym IsZero  [S Succ _]    = S F []
->   evSym App     [L _ m, n]    = eval (substitute m n)
->   evSym Fst   [S Pair [m, _]] = m
->   evSym Snd   [S Pair [_, n]] = n
+> eval : Fuel -> ClosedPCFTerm -> Maybe ClosedPCFTerm
+> eval Dry _ = Nothing
+> eval (More f) (L t m)        = Just $ L t m
+> eval (More f) (S Pair ms)    = JustS Pair ms
+> eval (More f) (S Y [m])      = eval f (S App [m, S Y [m]])
+> eval (More f) (S IfElse [p, m, n]) = case !(eval f p) of
+>                                         (S T []) => eval f m
+>                                         (S F []) => eval f n
+>                                         p'       => JustS IfElse [p', m, n]
+> eval (More f) (S s [])         = JustS s []  -- constants eval to themselves
+> eval (More f) (S s (m :: ms))  = evSym s (!(eval f m) :: ms) where
+>   evSym : Symbol ar -> Vect ar ClosedPCFTerm -> Maybe ClosedPCFTerm
+>   evSym Pred    [S Zero _]    = JustS Zero []
+>   evSym Pred    [S Succ [m]]  = Just m
+>   evSym IsZero  [S Zero _]    = JustS T []
+>   evSym IsZero  [S Succ _]    = JustS F []
+>   evSym App     [L _ m, n]    = eval f (substitute m n)
+>   evSym Fst   [S Pair [m, _]] = Just m
+>   evSym Snd   [S Pair [_, n]] = Just n
 >   evSym s ms = let m = (S s ms) in
->                if ((tryClose m >>= typeOfClosed) == Just PCFUnit)
->                   then (S Unit [])
->                   else (S s ms)     -- everything that hasn't evaluated so far, just evaluates to itself
+>                case tryClose m >>= typeOfClosed of
+>                   Just PCFUnit => Just (S Unit [])
+>                   -- everything that hasn't evaluated so far, just evaluates to itself
+>                   -- notice that we are using the evaluated first argument here, not the original
+>                   -- one
+>                   _            => Just m
 
 
