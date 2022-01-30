@@ -75,34 +75,37 @@ This is the so called big-step reduction.
 
 Not all PCFTerms evaluate to a Value, some may enter an infinite loop.
 To still define eval as a total function, we supply it with some `fuel'. This fuel acts as an upper
-bound on computation steps. The function will only return Nothing if this upper bound was reached
+bound on computation steps. 
+
+For well-typed terms, the function will only return Nothing if this upper bound was reached
 
 < public export
-> eval : Fuel -> ClosedPCFTerm -> Maybe ClosedPCFTerm
+> eval : Fuel -> ClosedPCFTerm -> Maybe ClosedPCFValue
 > eval Dry _ = Nothing
 > eval (More f) (L t m)        = Just $ L t m
-> eval (More f) (S Pair ms)    = JustS Pair ms
+> eval (More f) (S Pair [m,n]) = Just $ Pair m n
 > eval (More f) (S Y [m])      = eval f (S App [m, S Y [m]])
 > eval (More f) (S IfElse [p, m, n]) = case !(eval f p) of
->                                         (S T []) => eval f m
->                                         (S F []) => eval f n
->                                         p'       => JustS IfElse [p', m, n]
-> eval (More f) (S s [])         = JustS s []  -- constants eval to themselves
-> eval (More f) (S s (m :: ms))  = evSym s (!(eval f m) :: ms) where
->   evSym : Symbol ar -> Vect ar ClosedPCFTerm -> Maybe ClosedPCFTerm
->   evSym Pred    [S Zero _]    = JustS Zero []
->   evSym Pred    [S Succ [m]]  = Just m
->   evSym IsZero  [S Zero _]    = JustS T []
->   evSym IsZero  [S Succ _]    = JustS F []
->   evSym App     [L _ m, n]    = eval f (substitute m n)
->   evSym Fst   [S Pair [m, _]] = Just m
->   evSym Snd   [S Pair [_, n]] = Just n
->   evSym s ms = let m = (S s ms) in
->                case tryClose m >>= typeOfClosed of
->                   Just PCFUnit => Just (S Unit [])
->                   -- everything that hasn't evaluated so far, just evaluates to itself
->                   -- notice that we are using the evaluated first argument here, not the original
->                   -- one
->                   _            => Just m
-
-
+>                                         (C T) => eval f m
+>                                         (C F) => eval f n
+>                                         p'    => Nothing -- impossible for well-typed terms
+> eval (More f) (S s [])         = Just $ C s  -- constants eval to themselves
+> eval (More f) (S s (m :: ms))  = evSym s !(eval f m) ms where
+>   evSym : Symbol (1 + ar) -> ClosedPCFValue -> Vect ar ClosedPCFTerm -> Maybe ClosedPCFValue
+>   evSym Pred    (C Zero)    _   = Just $ C Zero
+>   evSym Pred    (Succ m)    _   = Just m
+>   evSym IsZero  (C Zero)    _   = Just $ C T
+>   evSym IsZero  (Succ _)    _   = Just $ C F
+>   evSym App     (L _ m)     [n] = eval f (substitute m n)
+>   evSym Fst     (Pair m _)  _   = eval f m
+>   evSym Snd     (Pair _ n)  _   = eval f n
+>   evSym s v ms = let m = (S s ((toTerm v) :: ms)) in  -- take the evaluated first arg, and
+>                                                       -- recombine into a term m
+>                  case typeOfClosed m of
+>                     Just PCFUnit => Just (C Unit)
+>                     -- everything that hasn't evaluated so far, will evaluates to itself, but only
+>                     -- if it is representable as value. This should be the case for all well-typed
+>                     -- terms that reach this point
+>                     -- notice that we are using the evaluated first argument here, not the original
+>                     -- one
+>                     _            => fromTerm m
