@@ -4,6 +4,8 @@
 <
 < import public Data.Fin  -- needed publically, since we publically export types that reference Fin
 < import public Data.Vect
+<
+< %default total
 
 Terms for PCF
 -------------
@@ -64,12 +66,16 @@ This really is just a wrapper around Fin.strengthen, with straightforward recurs
 detail only variables and lambdas.
 
 > strengthen : {k :_} -> PCFTerm (S k) -> Maybe (PCFTerm k)
+> strengthenVect : {k :_} -> Vect n (PCFTerm (S k)) -> Maybe (Vect n (PCFTerm k))
+> strengthenVect (y::ys) = [| (strengthen y) :: (strengthenVect ys) |]
+> strengthenVect [] = Just []
+
 > strengthen (V v)    = Fin.strengthen v >>= Just . V
 > strengthen (L t m)  = strengthen m     >>= Just . L t
-> strengthen (S s ar) = Just (S s !(sequence (strengthen <$> ar)))
+> strengthen (S s ar) = Just (S s !(strengthenVect ar))
 
 
-> public export
+< public export
 > tryClose : {k:_} -> PCFTerm k -> Maybe ClosedPCFTerm
 > tryClose {k} t = case k of 
 >                   0      => Just t
@@ -126,24 +132,14 @@ We are now able to define equality for terms. The important case is
 lambda-abstraction. We are using de Bruijn indices, which make comparing terms
 very easy.
 
-< public export
+< public export partial
 > implementation Eq (PCFTerm k) where
 >   -- Trivial implementation omitted
-<   V v         == V w        = v == w
-<   L a m       == L b n      = a == b && m == n
-<   S IfElse ms == S IfElse ns  = ms == ns
-<   S App    ms == S App    ns  = ms == ns
-<   S Pair   ms == S Pair   ns  = ms == ns
-<   S Fst    ms == S Fst    ns  = ms == ns
-<   S Snd    ms == S Snd    ns  = ms == ns
-<   S Succ   ms == S Succ   ns  = ms == ns
-<   S Pred   ms == S Pred   ns  = ms == ns
-<   S IsZero ms == S IsZero ns  = ms == ns
-<   S Y      ms == S Y      ns  = ms == ns
-<   S T      ms == S T      ns  = ms == ns
-<   S F      ms == S F      ns  = ms == ns
-<   S Zero   ms == S Zero   ns  = ms == ns
-<   S Unit   ms == S Unit   ns  = ms == ns
+<   V v         == V w          = v == w
+<   L a m       == L b n        = a == b && m == n
+<   S s [a]     == S p [x]      = s == p && a == x
+<   S s [a,b]   == S p [x,y]    = s == p && a == x && b == y
+<   S s [a,b,c] == S p [x,y,z]  = s == p && a == x && b == y && c == z
 <   _           == _            = False
 
 

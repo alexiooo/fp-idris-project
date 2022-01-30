@@ -1,8 +1,10 @@
 
 < module Lib.Values
 
-< import Lib.PCF
+< import Lib.Terms
 < import Data.Maybe
+<
+< %default total
 
 Values and Normal Forms
 -------------
@@ -15,22 +17,24 @@ A certain subset of terms are called `values'
 >   F     : PCFValue k
 >   Zero  : PCFValue k
 >   Succ  : PCFValue k -> PCFValue k
->   I     : PCFValue k
+>   Unit     : PCFValue k
 >   P     : PCFTerm k -> PCFTerm k     -> PCFValue k
 >   L     : PCFType   -> PCFTerm (S k) -> PCFValue k
 
 
 Some terms are values
-> public export
+< public export
 > fromTerm : PCFTerm k -> Maybe (PCFValue k)
+> fromTerm (L t m)  = Just (L t m)
+> fromTerm (V _)    = Nothing       -- variables are not values
+> fromTerm (S s ms) = ftSym s ms where
+>   ftSym T = Just T
 > fromTerm T          = Just T
 > fromTerm F          = Just F
 > fromTerm Zero       = Just Zero
-> fromTerm (Succ t)   = do v <- fromTerm t
->                          Just (Succ v)
-> fromTerm I          = Just I
+> fromTerm (Succ t)   = Just [| Succ fromTerm t |]
+> fromTerm Unit       = Just Unit
 > fromTerm (P m n)    = Just (P m n)
-> fromTerm (L t m)    = Just (L t m)
 > fromTerm _          = Nothing
 
 All values are terms
@@ -40,13 +44,13 @@ All values are terms
 > toTerm F          = F
 > toTerm Zero       = Zero
 > toTerm (Succ v)   = Succ (toTerm v)
-> toTerm I          = I
+> toTerm Unit       = Unit
 > toTerm (P m n)    = P m n
 > toTerm (L t m)  = L t m
 
-> public export
-> total isValue : PCFTerm k -> Bool
-> isValue t = fromTerm i /= Nothing
+-- < public export
+-- > isValue : PCFTerm k -> Bool
+-- > isValue t = (fromTerm t) /= Nothing
 
 Values correspond exactly to terms that are in normal forms
 
