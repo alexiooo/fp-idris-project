@@ -5,6 +5,7 @@
 |||   * writing if' p (then' m) (else' n)
 |||   * using nat' and bool' as types
 |||   * using curried versions of the constructors
+|||   * writing t ^ u for application, rather than App t u 
 ||| Note the ' marks, which differentiate the embedded PCF notation from Idris
 module Lib.DSL
 
@@ -45,11 +46,11 @@ public export
 λ : PCFType -> PCFTerm (S k) -> PCFTerm k
 λ = L
 
-infixl 6 .
+infixl 6 ^
 
 public export
-(.) : PCFTerm k -> PCFTerm k -> PCFTerm k
-(.) = App
+(^) : PCFTerm k -> PCFTerm k -> PCFTerm k
+(^) = App
 
 
 
