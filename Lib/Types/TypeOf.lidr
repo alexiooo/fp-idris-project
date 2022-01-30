@@ -50,7 +50,7 @@ enter an infinite loop
 >   (Snd,     [_ * b])          => Just b
 >   (Succ,    [PCFNat])         => Just PCFNat
 >   (Pred,    [PCFNat])         => Just PCFNat
->   (IsZero,  [PCFNat])         => Just PCFNat
+>   (IsZero,  [PCFNat])         => Just PCFBool
 >   (T,       [])               => Just PCFBool
 >   (F,       [])               => Just PCFBool
 >   (Zero,    [])               => Just PCFNat
