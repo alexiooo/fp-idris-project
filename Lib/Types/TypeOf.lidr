@@ -51,6 +51,8 @@ enter an infinite loop
 >   (Succ,    [PCFNat])         => Just PCFNat
 >   (Pred,    [PCFNat])         => Just PCFNat
 >   (IsZero,  [PCFNat])         => Just PCFBool
+>   (Y,       [a ~> b])         => if a == b then Just a
+>                                            else Nothing
 >   (T,       [])               => Just PCFBool
 >   (F,       [])               => Just PCFBool
 >   (Zero,    [])               => Just PCFNat

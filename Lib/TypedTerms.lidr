@@ -97,11 +97,18 @@ Type checking now means to translate a PCFTerm to a TypedTerm
 >   (Succ,    [(PCFNat ** m)])        => JustT (Succ m)
 >   (Pred,    [(PCFNat ** m)])        => JustT (Pred m)
 >   (IsZero,  [(PCFNat ** m)])        => JustT (IsZero m)
+>   (Y,       [(a ~> b ** m)])        => case (decEq a b) of
+>                                           Yes eq => Just (a ** (Y (rewrite cong (a ~> ) eq in m)))
+>                                           No  _  => Nothing
 >   (T,       [])                     => JustT T
 >   (F,       [])                     => JustT F
 >   (Zero,    [])                     => JustT Zero
 >   (Unit,    [])                     => JustT Unit
 >   (_, _)                            => Nothing
+
+< public export
+> typeCheckClosed : ClosedPCFTerm -> Maybe (TypedTerm [])
+> typeCheckClosed m = typeCheck [] m
 
 > typeOf : TypedTerm k -> PCFType
 > typeOf = fst
