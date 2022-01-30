@@ -1,11 +1,12 @@
 
 < module Lib.Reduction
 <
-< import Lib.Terms
-< import Lib.Types
-< import Lib.TypedTerms
-< import Lib.Substitute
-< import Lib.Util
+< import public Lib.Terms
+< import public Lib.Types
+< import public Lib.TypedTerms
+< import public Lib.Substitute
+< import public Lib.Values
+< import public Lib.Util
 <
 < import Data.Fuel
 <

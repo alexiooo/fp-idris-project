@@ -1,8 +1,8 @@
 
 < module Lib.Values
 
-< import Lib.Types
-< import Lib.Terms
+< import public Lib.Types
+< import public Lib.Terms
 < import Data.Maybe
 <
 < %default total
@@ -19,6 +19,10 @@ A certain subset of terms are called `values'
 >   Succ  : PCFValue k -> PCFValue k
 >   Pair  : PCFTerm k -> PCFTerm k     -> PCFValue k
 >   L     : PCFType   -> PCFTerm (S k) -> PCFValue k
+
+< public export
+> ClosedPCFValue : Type
+> ClosedPCFValue = PCFValue 0
 
 
 Some terms are values

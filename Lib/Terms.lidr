@@ -143,4 +143,20 @@ very easy.
 <   _           == _            = False
 
 
-
+< public export
+< Show (PCFTerm k) where
+<   show (V x)   = show x
+<   show (L x y) = "( λ " ++ show x ++ " . " ++ show y ++ ")"
+<   show (S IfElse [p, m, n]) = ?hole_4
+<   show (S App    [m,n]) = (show m) ++ (show n)
+<   show (S Pair   [m,n]) = "<" ++ show m ++ ", " ++ show n ++ ">"
+<   show (S Fst    [m])   = "π₁(" ++ show m ++ ")"
+<   show (S Snd    [m])   = "π₂(" ++ show m ++ ")"
+<   show (S Succ   [m])   = "Succ (" ++ show m ++ ")"
+<   show (S Pred   [m])   = "Pred (" ++ show m ++ ")"
+<   show (S IsZero [m])   = "IsZero (" ++ show m ++ ")"
+<   show (S Y      [m])   = "Y (" ++ show m ++ ")"
+<   show (S T      _)     = "T"
+<   show (S F      _)     = "F"
+<   show (S Zero   _)     = "Zero"
+<   show (S Unit   _)     = "Unit"

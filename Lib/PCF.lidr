@@ -1,7 +1,7 @@
 > module Lib.PCF
 >
 > import public Lib.Terms
-> import public Lib.Type
+> import public Lib.Types
 > import Data.Fin
 > import Data.List
 > import Data.Vect

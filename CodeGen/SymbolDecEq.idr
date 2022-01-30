@@ -80,7 +80,7 @@ namespace Symbol
 
   module Lib.Terms.SymbolDecEq
 
-  import Lib.Terms
+  import public Lib.Terms
   import public Decidable.Equality
 
 

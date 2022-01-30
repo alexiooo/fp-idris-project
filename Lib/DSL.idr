@@ -8,7 +8,7 @@
 ||| Note the ' marks, which differentiate the embedded PCF notation from Idris
 module Lib.DSL
 
-import Lib.Terms
+import public Lib.Terms
 
 
 public export IfElse : PCFTerm k -> PCFTerm k -> PCFTerm k -> PCFTerm k

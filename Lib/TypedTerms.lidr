@@ -3,6 +3,7 @@
 < import public Lib.Types
 < import public Lib.Types.TypeOf
 < import public Lib.Types.DecEq
+< import public Lib.Util
 < import Data.DPair
 
 Well-Typed Terms

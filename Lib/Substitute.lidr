@@ -1,7 +1,8 @@
 
 < module Lib.Substitute
 <
-< import Lib.Terms
+< import public Lib.Terms
+< import public Lib.TypedTerms
 
 In order to define small-step reduction, we must be able to substitute a term
 for a variable in another term. 

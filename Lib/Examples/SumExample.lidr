@@ -1,8 +1,8 @@
 
 > module Lib.Examples.SumExample
->
-< import Lib.PCF
-< import Lib.DSL
+<
+< import public Lib.PCF
+> import public Lib.DSL
 
 
 

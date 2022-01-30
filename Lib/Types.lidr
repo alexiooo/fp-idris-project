@@ -20,3 +20,12 @@ We want our types to be comparable. This definition enforces unique readability.
 >   (a ~> b) == (c ~> d) = a == c && b == d
 >   (a * b)  == (c * d)  = a == c && b == d
 >   _        == _        = False
+
+
+< public export
+< Show PCFType where
+<   show PCFBool = "bool"
+<   show PCFNat  = "nat"
+<   show PCFUnit = "unit"
+<   show (x ~> y) = "(" ++ show x ++ " ~> " ++ show y ++ ")" 
+<   show (x * y)  = "(" ++ show x ++ " * "  ++ show y ++ ")" 

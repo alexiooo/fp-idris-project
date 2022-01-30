@@ -2,7 +2,7 @@
 -- !!! THIS FILE IS AUTO-GENERATED, DO NOT MODIFY IT DIRECTLY
 -- !!!
 module Lib.Terms.SymbolDecEq
-import Lib.Terms
+import public Lib.Terms
 import public Decidable.Equality
 export Uninhabited (Symbol.App    = Symbol.Pair  ) where uninhabited Refl impossible
 export Uninhabited (Symbol.Pair   = Symbol.App   ) where uninhabited Refl impossible
