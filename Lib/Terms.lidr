@@ -42,7 +42,7 @@ PCFTerm n encodes terms with at most n free variables
 >     Unit   : Symbol 0       -- unit value (*)
 
 < public export
-> data PCFTerm : Nat -> Type where 
+> data PCFTerm : Nat -> Type where
 >     V    : Var k -> PCFTerm k                             -- variables
 >     L    : PCFType   -> PCFTerm (S k) -> PCFTerm k        -- lambda
 >     S    : Symbol ar -> Vect ar (PCFTerm k) -> PCFTerm k  -- other symbols
@@ -53,16 +53,12 @@ Of special interest are the closed terms, those without any free variables
 > ClosedPCFTerm : Type
 > ClosedPCFTerm = PCFTerm 0
 
-The Y constructor returns a fixed-point of the given term. It is required to
-define functions by recursion. For example, the sum function on PCFNat is
-defined recursively.
-
 ### Include SumExample.lidr here?  Use \begin{showCode} so it doesn't compile.
 
 
 Remember that the type only gives an upper bound, so an inhabitant of say PCFType 3 might still
 be closed. The following will try to strengthen any such term.
-This really is just a wrapper around Fin.strengthen, with straightforward recursive cases, so we 
+This really is just a wrapper around Fin.strengthen, with straightforward recursive cases, so we
 detail only variables and lambdas.
 
 > strengthen : {k :_} -> PCFTerm (S k) -> Maybe (PCFTerm k)
@@ -77,14 +73,14 @@ detail only variables and lambdas.
 
 < public export
 > tryClose : {k:_} -> PCFTerm k -> Maybe ClosedPCFTerm
-> tryClose {k} t = case k of 
+> tryClose {k} t = case k of
 >                   0      => Just t
->                   (S k') => strengthen t >>= tryClose 
+>                   (S k') => strengthen t >>= tryClose
 
 
 
-Sadly, Idris does not have an equivalent of Haskell's `deriving` statement, so we'll have to 
-implement equality ourselves. We omit the details here and in any other similarly trivial 
+Sadly, Idris does not have an equivalent of Haskell's `deriving` statement, so we'll have to
+implement equality ourselves. We omit the details here and in any other similarly trivial
 implementation blocks
 
 > implementation Eq (Symbol k) where
