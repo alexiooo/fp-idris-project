@@ -110,32 +110,6 @@ implementation Eq (Symbol k) where
   _      == _      = False
 \end{hidden}
 
-Eq requires that it's arguments are of the same type, so it only works for
-symbols of known arity. \lstinline{s1 ~~ s2} holds iff \lstinline{s1 == s2},
-but the former will typecheck even if the arities don't match.
-
-\begin{code}
-namespace Symbol
-  infixr 6 ~~
-  public export
-  (~~) : Symbol k -> Symbol l -> Bool
-  -- trivial implementation omitted
-  IfElse ~~ IfElse = True
-  App    ~~ App    = True
-  Pair   ~~ Pair   = True
-  Fst    ~~ Fst    = True
-  Snd    ~~ Snd    = True
-  Succ   ~~ Succ   = True
-  Pred   ~~ Pred   = True
-  IsZero ~~ IsZero = True
-  Y      ~~ Y      = True
-  T      ~~ T      = True
-  F      ~~ F      = True
-  Zero   ~~ Zero   = True
-  Unit   ~~ Unit   = True
-  _      ~~ _      = False
-\end{code}
-
 We are now able to define equality for terms. The important case is
 lambda-abstraction. We are using de Bruijn indices, which make comparing terms
 very easy.
