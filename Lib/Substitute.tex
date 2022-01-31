@@ -4,7 +4,6 @@
 module Lib.Substitute
 
 import public Lib.Terms
-import public Lib.TypedTerms
 \end{hidden}
 
 In order to define small-step reduction, we must be able to substitute a term
@@ -17,44 +16,70 @@ free variables. The following function does this.
 The depth argument keeps track of how many lambda's have been encoutered,
 while the types reflect that the upper bound on free variables also increases.
 
-Because of the totality checker, we have to give a *Vect version of the function as well, following
-the same pattern as we did while type checking.
-
 \begin{code}
 total incFreeVar : (n : Nat) -> PCFTerm k -> PCFTerm (S k)
-
-total incFreeVarVect : (n : Nat) -> Vect m (PCFTerm k) -> Vect m (PCFTerm (S k))
-incFreeVarVect x (y::ys) = (incFreeVar x y) :: (incFreeVarVect x ys)
-incFreeVarVect _ [] = []
-
-incFreeVar depth (V v)    = if (finToNat v) < depth
-                              then (V (weaken v))
-                            else (V (FS v))
+incFreeVar depth (V v)    = if finToNat v < depth
+                              then V (weaken v)
+                            else V (FS v)
 incFreeVar depth (L t m)  = L t (incFreeVar (S depth) m)
-incFreeVar depth (S s ms) = S s (incFreeVarVect depth ms)
 \end{code}
 
-< public export
-> total substitute : {k :_} -> PCFTerm (S k) -> PCFTerm k -> PCFTerm k
+There are, as usual, a lot of trivial cases which we do not display here.
 
-Note that in the *Vect version, we flip the term arguments to be consistent with earlier *Vect functions
-> total substituteVect : {k :_} -> PCFTerm k -> Vect n (PCFTerm (S k)) -> Vect n (PCFTerm k)
+\begin{hidden}
+incFreeVar depth (IfThenElse m n p) = IfThenElse (incFreeVar depth m) (incFreeVar depth n) (incFreeVar depth p)
+incFreeVar depth (App m n)          = App (incFreeVar depth m) (incFreeVar depth n)
+incFreeVar depth (Pair m n)         = Pair (incFreeVar depth m) (incFreeVar depth n)
+incFreeVar depth (Fst m)            = Fst (incFreeVar depth m)
+incFreeVar depth (Snd m)            = Snd (incFreeVar depth m)
+incFreeVar depth (Succ m)           = Succ (incFreeVar depth m)
+incFreeVar depth (Pred m)           = Pred (incFreeVar depth m)
+incFreeVar depth (IsZero m)         = IsZero (incFreeVar depth m)
+incFreeVar depth (Y m)              = Y (incFreeVar depth m)
+incFreeVar depth T                  = T
+incFreeVar depth F                  = F
+incFreeVar depth Zero               = Zero
+incFreeVar depth Unit               = Unit
+\end{hidden}
+
+Now that we can rename variables, we can implement the substitution function.
+
+\begin{code}
+public export
+total substitute : {k : _} -> PCFTerm (S k) -> PCFTerm k -> PCFTerm k
+\end{code}
 
 We try to strengthen (i.e., decrement) the bound on the variable index.
 The only reason for this to fail is if the index is already at the upper bound; if w == k, thus
 if strengthening fails, we should substitute
 
-> substitute (V w) s =  case Fin.strengthen w of
->                         Nothing => s
->                         Just w' => V w'
+\begin{code}
+substitute (V v) s = case Fin.strengthen v of
+                     Nothing => s
+                     Just w  => V w
+\end{code}
 
 Recall that the body of a lambda has one more (potential) free-variable, thus the upper bound is
 automatically incremented
 
-> substitute (L t m) s = L t (substitute m (incFreeVar 0 s))
+\begin{code}
+substitute (L t m) s = L t $ substitute m $ incFreeVar 0 s
+\end{code}
 
 All the other cases are straightforward, once again, the substitution is just passed on.
 
-> substitute (S sym ms) s = S sym (substituteVect s ms)
-> substituteVect x (y::ys) = (substitute y x) :: (substituteVect x ys)
-> substituteVect _ [] = []
+\begin{hidden}
+substitute (IfThenElse m n p) s = IfThenElse (substitute m s) (substitute n s) (substitute p s)
+substitute (App m n)          s = App (substitute m s) (substitute n s)
+substitute (Pair m n)         s = Pair (substitute m s) (substitute n s)
+substitute (Fst m)            s = Fst (substitute m s)
+substitute (Snd m)            s = Snd (substitute m s)
+substitute (Succ m)           s = Succ (substitute m s)
+substitute (Pred m)           s = Pred (substitute m s)
+substitute (IsZero m)         s = IsZero (substitute m s)
+substitute (Y m)              s = Y (substitute m s)
+substitute T                  s = T
+substitute F                  s = F
+substitute Zero               s = Zero
+substitute Unit               s = Unit
+\end{hidden}

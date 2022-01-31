@@ -6,7 +6,6 @@ module Lib.Terms
 import public Lib.Types
 
 import public Data.Fin  -- needed publically, since we publically export types that reference Fin
-import public Data.Vect
 
 %default total
 \end{hidden}
@@ -56,7 +55,7 @@ Remember that the type only gives an upper bound, so an inhabitant of say
 
 The following will try to strengthen any such term. This really is just a
 wrapper around Fin.strengthen, with straightforward recursive cases,
-so we detail only variables and lambdas.   %%%%%%%%%%%%%%% Add details
+so we detail only variables and lambdas.
 
 \begin{code}
 strengthen : {k : _} -> PCFTerm (S k) -> Maybe (PCFTerm k)
@@ -74,14 +73,14 @@ strengthen (Y m)              = map Y          $ strengthen m
 strengthen T                  = Just T
 strengthen F                  = Just F
 strengthen Zero               = Just Zero
-strengthen Unit       = Just Unit
+strengthen Unit               = Just Unit
 \end{code}
 
 \begin{code}
 public export
 tryClose : {k : _} -> PCFTerm k -> Maybe ClosedPCFTerm
 tryClose {k} t = case k of
-                 0      => Just t
+                 0     => Just t
                  (S l) => strengthen t >>= tryClose
 \end{code}
 
@@ -92,7 +91,6 @@ very easy.
 \begin{code}
 public export partial
 implementation Eq (PCFTerm k) where
-
   V v              == V w              = v == w
   L a m            == L b n            = a == b && m == n
   IfThenElse m n p == IfThenElse q r s = m == q && n == r && p == s
