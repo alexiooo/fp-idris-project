@@ -26,75 +26,92 @@ The $\mbf{Y}$ constructor returns a fixpoint of the given term. It is what makes
 The reader may notice that among the well-formed terms, some do not make any sense. For example, terms such as $\mbf{iszero}(\mbf{T})$ or $\pi_1(\lambda x^\mbf{nat}.x)$ do not make sense. We should thus specify a type for each term and specify which constructions can be applied to which types.
 
 
+%simply lambda calculus typing rules
 
- \begin{prooftree}
- \AxiomC{}
- \UnaryInfC{$\Gamma, x:A \proves x:A$}
- \end{prooftree}
-
+%base case
 \begin{prooftree}
-\AxiomC{$\Gamma\proves M:A\to B\qquad \Gamma\proves N:A$}
-\UnaryInfC{$\Gamma\proves MN:B$}
-\end{prooftree}
-
-\begin{prooftree}
-\AxiomC{$\Gamma\proves M:A\times B$}
-\UnaryInfC{$\Gamma\proves\pi_1M:A$}
-\end{prooftree}
-
-
-\begin{prooftree}
+\AxiomC{}
+\UnaryInfC{$\Gamma, x:A \proves x:A$}
+\DisplayProof
+\qquad
 \AxiomC{}
 \UnaryInfC{$\Gamma \proves * : 1$}
 \end{prooftree}
 
+%functions
 \begin{prooftree}
 \AxiomC{$\Gamma, x:A\proves M:B$}
 \UnaryInfC{$\Gamma\proves\lambda x^A.M : A\to B$}
+\DisplayProof
+\qquad
+\AxiomC{$\Gamma\proves M:A\to B\qquad \Gamma\proves N:A$}
+\UnaryInfC{$\Gamma\proves MN:B$}
 \end{prooftree}
 
+%products
 \begin{prooftree}
+\AxiomC{$\Gamma\proves M:A \qquad \Gamma\proves N:B$}
+\UnaryInfC{$\Gamma\proves \langle M,N\rangle:A\times B$}
+\DisplayProof
+\qquad
+\AxiomC{$\Gamma\proves M:A\times B$}
+\UnaryInfC{$\Gamma\proves\pi_1M:A$}
+\DisplayProof
+\qquad
 \AxiomC{$\Gamma\proves M:A\times B$}
 \UnaryInfC{$\Gamma\proves\pi_2M:B$}
 \end{prooftree}
 
 
 
-\begin{prooftree}
-\AxiomC{$\Gamma\proves M:A \qquad \Gamma\proves N:B$}
-\UnaryInfC{$\Gamma\proves \langle M,N\rangle:A\times B$}
-\end{prooftree}
+
+
+
+
+
+
+
 
 %% include PCF typing rules
 
+%booleans
 \begin{prooftree}
 \AxiomC{}
 \UnaryInfC{$\Gamma \proves \mathbf{T} : \mathbf{bool}$}
-\end{prooftree}  
-
-\begin{prooftree}
+\DisplayProof
+\qquad
 \AxiomC{}
 \UnaryInfC{$\Gamma \proves \mathbf{F} : \mathbf{bool}$}
+\end{prooftree}
+
+
+%nat
+\begin{prooftree}
+\AxiomC{}
+\UnaryInfC{$\Gamma \proves \mathbf{zero} : \mathbf{nat}$}
+\DisplayProof
+\qquad
+\AxiomC{$\Gamma \proves M : \mathbf{nat}$}
+\UnaryInfC{$\Gamma \proves \mathbf{succ}(M) : \mathbf{nat}$}
+\DisplayProof
+\qquad
+\AxiomC{$\Gamma \proves M : \mathbf{nat}$}
+\UnaryInfC{$\Gamma \proves \mathbf{pred}(M) : \mathbf{nat}$}
+\end{prooftree}
+
+%miscellaneous 
+\begin{prooftree}
+\AxiomC{$\Gamma \proves M : \mathbf{nat}$}
+\UnaryInfC{$\Gamma \proves \mathbf{iszero}(M) : \mathbf{bool}$}
+\DisplayProof
+\qquad
+\AxiomC{$\Gamma \proves M : \mathbf{bool}\qquad\Gamma \proves N : A\qquad\Gamma \proves P : A$}
+\UnaryInfC{$\Gamma \proves \textbf{if } M \textbf{ then } N \textbf{ else } P : A$}
 \end{prooftree}
 
 \begin{prooftree}
 \AxiomC{$\Gamma \proves M : A \to A$}
 \UnaryInfC{$\Gamma \proves \mathbf{Y}(M) : A$}
-\end{prooftree}
-
-\begin{prooftree}
-\AxiomC{}
-\UnaryInfC{$\Gamma \proves \mathbf{zero} : \mathbf{nat}$}
-\end{prooftree}
-
-\begin{prooftree}
-\AxiomC{$\Gamma \proves M : \mathbf{nat}$}
-\UnaryInfC{$\Gamma \proves \mathbf{succ}(M) : \mathbf{nat}$}
-\end{prooftree}
-
-\begin{prooftree}
-\AxiomC{$\Gamma \proves M : \mathbf{nat}$}
-\UnaryInfC{$\Gamma \proves \mathbf{pred}(M) : \mathbf{nat}$}
 \end{prooftree}
 
 \subsection{Reduction}
@@ -107,4 +124,53 @@ TBA.
 
 \subsubsection{Big-step Reduction}
 
-TBA.
+\begin{prooftree}
+\AxiomC{}
+\UnaryInfC{$\mathbf{T} \Downarrow \mathbf{T}$}
+\end{prooftree}
+
+\begin{prooftree}
+\AxiomC{}
+\UnaryInfC{$\textbf{F} \Downarrow \textbf{F}$} 
+\end{prooftree}
+
+
+\begin{prooftree}
+\AxiomC{}
+\UnaryInfC{$\textbf{zero} \Downarrow \mathbf{zero}$}
+\end{prooftree}
+
+\begin{prooftree}
+\AxiomC{}
+\UnaryInfC{$\langle M,N \rangle \Downarrow \langle M,N \rangle$}
+\end{prooftree}
+
+\begin{prooftree}
+\AxiomC{}
+\UnaryInfC{$\lambda x.M \Downarrow \lambda x .M$}
+\end{prooftree}
+
+\begin{prooftree}
+\AxiomC{$M \Downarrow \mathbf{zero}$}
+\UnaryInfC{$\mathbf{pred}(M) \Downarrow \mathbf{zero}$}
+\end{prooftree}
+
+\begin{prooftree}
+\AxiomC{$M \Downarrow \mathbf{succ}(V)$}
+\UnaryInfC{$\mathbf{pred}(M) \Downarrow V$}
+\end{prooftree}
+
+\begin{prooftree}
+\AxiomC{$M \Downarrow \mathbf{zero}$}
+\UnaryInfC{$\mathbf{iszero}(M) \Downarrow \mathbf{T}$}
+\end{prooftree}
+
+\begin{prooftree}
+\AxiomC{$M \Downarrow \mathbf{succ}(V)$}
+\UnaryInfC{$\mathbf{iszero}(M) \Downarrow \mathbf{F}$}
+\end{prooftree}
+
+\begin{prooftree}
+\AxiomC{$M(\mathbf{Y}(M)) \Downarrow V$}
+\UnaryInfC{$\mathbf{Y}(M) \Downarrow V$}
+\end{prooftree}

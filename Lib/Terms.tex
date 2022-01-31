@@ -90,7 +90,9 @@ tryClose {k} t = case k of
                  (S k') => strengthen t >>= tryClose
 \end{code}
 
-As for types, we want terms to be comparable.
+As for types, we want terms to be comparable. The important case is lambda-abstraction.
+We are using de Bruijn indices, which make comparing terms very easy.
+We once again skip the other trivial cases.
 
 \begin{hidden}
 implementation Eq (Symbol k) where
@@ -110,21 +112,19 @@ implementation Eq (Symbol k) where
   _      == _      = False
 \end{hidden}
 
-We are now able to define equality for terms. The important case is
-lambda-abstraction. We are using de Bruijn indices, which make comparing terms
-very easy.
-
 \begin{code}
 public export partial
 implementation Eq (PCFTerm k) where
-
   V v         == V w          = v == w
   L a m       == L b n        = a == b && m == n
+\end{code}
+
+\begin{hidden}
   S s [a]     == S p [x]      = s == p && a == x
   S s [a,b]   == S p [x,y]    = s == p && a == x && b == y
   S s [a,b,c] == S p [x,y,z]  = s == p && a == x && b == y && c == z
   _           == _            = False
-\end{code}
+\end{hidden}
 
 We can also implement a show function. The implementation in itself is not
 interesting, so we omit the details.
