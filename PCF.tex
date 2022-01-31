@@ -1,0 +1,24 @@
+\section{The Language PCF}
+
+\subsection{Types and Terms}
+
+This section is intended as a quick introduction to the language PCF. The reader may consult \cite{LambdaNotes} for a more detailed introduction.
+
+PCF is a programming language that is very similar to the simply typed lambda-calculus. Instead of type variables, it has concrete type $\mbf{bool}$ and $\mbf{nat}$. It also has the classical type constructors $\to$, $\times$ and $1$. Formally, types are defined by the following BNF
+
+\[ A, B := \mbf{bool} \sep \mbf{nat} \sep A\to B \sep A\times B \sep 1. \]
+
+The terms for PCF are those of the simply-typed lambda calculus, plus some concrete terms. In BNF:
+
+\begin{align*}
+    M, N, P := x &\sep MN \sep \lambda x^A.M \sep \langle M, N\rangle \sep \pi_1M \sep \pi_2M \sep * \\
+    &\sep \mbf{T} \sep \mbf{F} \sep \mbf{zero} \sep \mbf{succ}(M) \sep \mbf{pred}(M) \\
+    &\sep \mbf{iszero}(M) \sep \mbf{if}\,M\,\mbf{then}\,N\,\mbf{else}\,P \sep \mbf{Y}(M).
+\end{align*}
+
+The $\mbf{Y}$ constructor returns a fixpoint of the given term. It is what makes the language Turing complete. For example, the addition function can be defined as
+
+\[ + := Y(\lambda f^{\mbf{nat}\to\mbf{nat}}m^\mbf{nat}n^\mbf{nat}.\mbf{if}\,\mbf{iszero}(m)\,\mbf{then}\,n\,\mbf{else}\,\mbf{succ}(f \mbf{pred}(m) n)). \]
+
+\subsection{Typing rules}
+
