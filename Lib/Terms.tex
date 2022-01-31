@@ -86,10 +86,6 @@ tryClose {k} t = case k of
                  (S k') => strengthen t >>= tryClose
 \end{code}
 
-Sadly, Idris does not have an equivalent of Haskell's `deriving` statement, so we'll have to
-implement equality ourselves. We omit the details here and in any other similarly trivial
-implementation blocks
-
 \begin{hidden}
 implementation Eq (Symbol k) where
   IfElse == IfElse = True

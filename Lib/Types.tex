@@ -1,0 +1,47 @@
+\subsection{Implementing Types}
+
+\begin{hidden}
+module Lib.Types
+\end{hidden}
+
+Defining a data type for PCF types is just a matter of translating the formal
+definition. We use the symbol \lstinline{~>} to represent the arrow constructor.
+
+\begin{code}
+public export
+data PCFType = PCFBool
+             | PCFNat
+             | PCFUnit
+             | (~>) PCFType PCFType
+             | (*) PCFType PCFType
+
+infixr 10 ~>
+\end{code}
+
+We want our types to be comparable. Sadly, Idris does not have an equivalent of
+Haskell's `deriving` statement, so we'll have to implement equality ourselves.
+We omit the details here and in any other similarly trivial implementation blocks.
+
+\begin{hidden}
+public export
+implementation Eq PCFType where
+  PCFBool  == PCFBool  = True
+  PCFNat   == PCFNat   = True
+  PCFUnit  == PCFUnit  = True
+  (a ~> b) == (c ~> d) = a == c && b == d
+  (a * b)  == (c * d)  = a == c && b == d
+  _        == _        = False
+\end{hidden}
+
+We also want our types to be displayed nicely. Once again, we do not display
+this rather trivial implementation.
+
+\begin{hidden}
+public export
+Show PCFType where
+  show PCFBool = "bool"
+  show PCFNat  = "nat"
+  show (x ~> y) = "(" ++ show x ++ " ~> " ++ show y ++ ")"
+  show (x * y)  = "(" ++ show x ++ " * "  ++ show y ++ ")"
+  show PCFUnit = "1"
+\end{hidden}
