@@ -32,3 +32,6 @@ build/
 *.code-workspace
 
 *.swp
+
+*~
+Lib/Scratch.idr

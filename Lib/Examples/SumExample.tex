@@ -1,0 +1,19 @@
+\begin{hidden}
+module Lib.Examples.SumExample
+import public Lib.PCF
+import public Lib.DSL
+\end{hidden}
+
+The Y constructor returns a fixed-point of the given term. It is required to
+define functions by recursion. For example, the sum function on PCFNat is
+defined recursively.
+
+\begin{hidden}
+public export   
+\end{hidden}\begin{code}
+sum : PCFTerm 0
+sum = Y (λ (nat' ~> (nat' ~> nat')) $ λ nat' $ λ nat' $
+              (if' (IsZero (V 0))
+                (then' (V 1))
+                (else' (Succ ((V 2) ^ (V 1) ^ (Pred (V 0)))))))
+\end{code}
