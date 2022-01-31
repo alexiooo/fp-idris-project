@@ -12,8 +12,8 @@ The terms for PCF are those of the simply-typed lambda calculus, plus some concr
 
 \begin{align*}
     M, N, P := x &\sep MN \sep \lambda x^A.M \sep \langle M, N\rangle \sep \pi_1M \sep \pi_2M \sep * \\
-    &\sep \mbf{T} \sep \mbf{F} \sep \mbf{zero} \sep \mbf{succ}(M) \sep \mbf{pred}(M) \\
-    &\sep \mbf{iszero}(M) \sep \mbf{if}\,M\,\mbf{then}\,N\,\mbf{else}\,P \sep \mbf{Y}(M).
+    &\sep \mbf{T} \sep \mbf{F} \sep \mbf{zero} \sep \mbf{succ}\,(M) \sep \mbf{pred}\,(M) \\
+    &\sep \mbf{iszero}\,(M) \sep \mbf{if}\,M\,\mbf{then}\,N\,\mbf{else}\,P \sep \mbf{Y}(M).
 \end{align*}
 
 The $\mbf{Y}$ constructor returns a fixpoint of the given term. It is what makes the language Turing complete. For example, the addition function can be defined as
