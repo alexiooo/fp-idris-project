@@ -11,21 +11,18 @@ import public Data.Vect
 %default total
 \end{hidden}
 
-PCF is a simple language that models computing. Its types are as follows.
-
-%%% Include Lib.Types here
-
-We begin by defining terms. We use de Bruijn indices to representent bound
-variables. This is an elegant way to deel with alpha-equivalence.
-We also keep track of (an upper bound on) free variables in the type;
-PCFTerm n encodes terms with at most n free variables
+We now want to define terms. We use de Bruijn indices to represent bound variables.
+This is an elegant way to deal with alpha-equivalence.
 
 \begin{code}
-||| Var k is a De-Bruijn index less than k
 public export
 Var : Nat -> Type
 Var = Fin
+\end{code}
 
+%%%%%%%%%% Insert something here.
+
+\begin{code}
 namespace Symbol
   public export
   data Symbol : (0 ar : Nat) -> Type where
@@ -44,6 +41,9 @@ namespace Symbol
     Unit   : Symbol 0       -- unit value (*)
 \end{code}
 
+We also keep track of (an upper bound on) free variables in the type:
+\lstinline{PCFTerm} n encodes terms with at most n free variables.
+
 \begin{code}
 public export
 data PCFTerm : Nat -> Type where
@@ -60,10 +60,12 @@ ClosedPCFTerm : Type
 ClosedPCFTerm = PCFTerm 0
 \end{code}
 
-Remember that the type only gives an upper bound, so an inhabitant of say PCFType 3 might still
-be closed. The following will try to strengthen any such term.
-This really is just a wrapper around Fin.strengthen, with straightforward recursive cases, so we
-detail only variables and lambdas.
+Remember that the type only gives an upper bound, so an inhabitant of say
+\lstinline{PCFType 3} might still be closed.
+
+The following will try to strengthen any such term. This really is just a
+wrapper around Fin.strengthen, with straightforward recursive cases,
+so we detail only variables and lambdas.   %%%%%%%%%%%%%%% Add details
 
 \begin{code}
 strengthen : {k :_} -> PCFTerm (S k) -> Maybe (PCFTerm k)
@@ -71,6 +73,8 @@ strengthenVect : {k :_} -> Vect n (PCFTerm (S k)) -> Maybe (Vect n (PCFTerm k))
 strengthenVect (y::ys) = [| (strengthen y) :: (strengthenVect ys) |]
 strengthenVect [] = Just []
 \end{code}
+
+%%%% This strengthenVect function should be replaced by a map..
 
 \begin{code}
 strengthen (V v)    = Fin.strengthen v >>= Just . V
@@ -85,6 +89,8 @@ tryClose {k} t = case k of
                  0      => Just t
                  (S k') => strengthen t >>= tryClose
 \end{code}
+
+As for types, we want terms to be comparable.
 
 \begin{hidden}
 implementation Eq (Symbol k) where
@@ -104,8 +110,9 @@ implementation Eq (Symbol k) where
   _      == _      = False
 \end{hidden}
 
-Eq requires that it's arguments are of the same type, so it only works for symbols of known arity.
-s1 ~~ s2 holds iff s1 == s2, but the former will typecheck even if the arities don't match.
+Eq requires that it's arguments are of the same type, so it only works for
+symbols of known arity. \lstinline{s1 ~~ s2} holds iff \lstinline{s1 == s2},
+but the former will typecheck even if the arities don't match.
 
 \begin{code}
 namespace Symbol
@@ -151,19 +158,19 @@ interesting, so we omit the details.
 \begin{hidden}
 public export
 Show (PCFTerm k) where
-  show (V x)   = show x
-  show (L x y) = "( λ " ++ show x ++ " . " ++ show y ++ ")"
-  show (S IfElse [p, m, n]) = ?hole_4
-  show (S App    [m,n]) = (show m) ++ (show n)
-  show (S Pair   [m,n]) = "<" ++ show m ++ ", " ++ show n ++ ">"
-  show (S Fst    [m])   = "π₁(" ++ show m ++ ")"
-  show (S Snd    [m])   = "π₂(" ++ show m ++ ")"
-  show (S Succ   [m])   = "Succ (" ++ show m ++ ")"
-  show (S Pred   [m])   = "Pred (" ++ show m ++ ")"
-  show (S IsZero [m])   = "IsZero (" ++ show m ++ ")"
-  show (S Y      [m])   = "Y (" ++ show m ++ ")"
-  show (S T      _)     = "T"
-  show (S F      _)     = "F"
-  show (S Zero   _)     = "Zero"
-  show (S Unit   _)     = "Unit"
+  show (V x)                = show x
+  show (L t m)              = "(λ" ++ show t ++ "." ++ show m ++ ")"
+  show (S IfElse [p, m, n]) = "if " ++ show p ++ " then " ++ show m ++ " else " ++ show n
+  show (S App    [m,n])     = "(" ++ (show m) ++ (show n) ++ ")"
+  show (S Pair   [m,n])     = "<" ++ show m ++ ", " ++ show n ++ ">"
+  show (S Fst    [m])       = "π₁(" ++ show m ++ ")"
+  show (S Snd    [m])       = "π₂(" ++ show m ++ ")"
+  show (S Succ   [m])       = "succ (" ++ show m ++ ")"
+  show (S Pred   [m])       = "pred (" ++ show m ++ ")"
+  show (S IsZero [m])       = "iszero (" ++ show m ++ ")"
+  show (S Y      [m])       = "Y(" ++ show m ++ ")"
+  show (S T      _)         = "T"
+  show (S F      _)         = "F"
+  show (S Zero   _)         = "zero"
+  show (S Unit   _)         = "*"
 \end{hidden}
