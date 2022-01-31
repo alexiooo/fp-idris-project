@@ -1,4 +1,4 @@
-\section{Implementing Terms}
+\subsection{Implementing Terms}
 
 \begin{hidden}
 module Lib.Terms
@@ -59,8 +59,6 @@ public export
 ClosedPCFTerm : Type
 ClosedPCFTerm = PCFTerm 0
 \end{code}
-
-\input{Lib/Examples/SumExample}
 
 Remember that the type only gives an upper bound, so an inhabitant of say PCFType 3 might still
 be closed. The following will try to strengthen any such term.
