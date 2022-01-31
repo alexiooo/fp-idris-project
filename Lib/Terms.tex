@@ -20,36 +20,27 @@ Var : Nat -> Type
 Var = Fin
 \end{code}
 
-%%%%%%%%%% Insert something here.
-
-\begin{code}
-namespace Symbol
-  public export
-  data Symbol : (0 ar : Nat) -> Type where
-    IfElse : Symbol 3       -- if-then-else construct
-    App    : Symbol 2       -- application
-    Pair   : Symbol 2       -- pairing
-    Fst    : Symbol 1       -- first projection
-    Snd    : Symbol 1       -- second projection
-    Succ   : Symbol 1       -- successor
-    Pred   : Symbol 1       -- predecessor
-    IsZero : Symbol 1       -- is zero predicate
-    Y      : Symbol 1       -- fixpoint / Y-combinator
-    T      : Symbol 0       -- true
-    F      : Symbol 0       -- false
-    Zero   : Symbol 0       -- zero value
-    Unit   : Symbol 0       -- unit value (*)
-\end{code}
-
 We also keep track of (an upper bound on) free variables in the type:
 \lstinline{PCFTerm} n encodes terms with at most n free variables.
 
 \begin{code}
 public export
 data PCFTerm : Nat -> Type where
-  V    : Var k -> PCFTerm k                             -- variables
-  L    : PCFType   -> PCFTerm (S k) -> PCFTerm k        -- lambda
-  S    : Symbol ar -> Vect ar (PCFTerm k) -> PCFTerm k  -- other symbols
+  V          : Var k -> PCFTerm k                                -- variables
+  L          : PCFType -> PCFTerm (S k) -> PCFTerm k             -- lambda
+  IfThenElse : PCFTerm k -> PCFTerm k -> PCFTerm k -> PCFTerm k  -- if-then-else construct
+  App        : PCFTerm k -> PCFTerm k -> PCFTerm k               -- application
+  Pair       : PCFTerm k -> PCFTerm k -> PCFTerm k               -- pairing
+  Fst        : PCFTerm k -> PCFTerm k                            -- first projection
+  Snd        : PCFTerm k -> PCFTerm k                            -- second projection
+  Succ       : PCFTerm k -> PCFTerm k                            -- successor
+  Pred       : PCFTerm k -> PCFTerm k                            -- predecessor
+  IsZero     : PCFTerm k -> PCFTerm k                            -- iszero predicate
+  Y          : PCFTerm k -> PCFTerm k                            -- fixpoint / Y-combinator
+  T          : PCFTerm k                                         -- true
+  F          : PCFTerm k                                         -- false
+  Zero       : PCFTerm k                                         -- zero
+  Unit       : PCFTerm k                                         -- unit value (*)
 \end{code}
 
 Of special interest are the closed terms, those without any free variables
@@ -68,49 +59,33 @@ wrapper around Fin.strengthen, with straightforward recursive cases,
 so we detail only variables and lambdas.   %%%%%%%%%%%%%%% Add details
 
 \begin{code}
-strengthen : {k :_} -> PCFTerm (S k) -> Maybe (PCFTerm k)
-strengthenVect : {k :_} -> Vect n (PCFTerm (S k)) -> Maybe (Vect n (PCFTerm k))
-strengthenVect (y::ys) = [| (strengthen y) :: (strengthenVect ys) |]
-strengthenVect [] = Just []
-\end{code}
-
-%%%% This strengthenVect function should be replaced by a map..
-
-\begin{code}
-strengthen (V v)    = Fin.strengthen v >>= Just . V
-strengthen (L t m)  = strengthen m     >>= Just . L t
-strengthen (S s ar) = Just (S s !(strengthenVect ar))
+strengthen : {k : _} -> PCFTerm (S k) -> Maybe (PCFTerm k)
+strengthen (V v)              = map V          $ Fin.strengthen v
+strengthen (L t m)            = map (L t)      $ strengthen m
+strengthen (IfThenElse m n p) = map IfThenElse (strengthen m) <*> strengthen n <*> strengthen p
+strengthen (App m n)          = map App        (strengthen m) <*> strengthen n
+strengthen (Pair m n)         = map Pair       (strengthen m) <*> strengthen n
+strengthen (Fst m)            = map Fst        $ strengthen m
+strengthen (Snd m)            = map Snd        $ strengthen m
+strengthen (Succ m)           = map Succ       $ strengthen m
+strengthen (Pred m)           = map Pred       $ strengthen m
+strengthen (IsZero m)         = map IsZero     $ strengthen m
+strengthen (Y m)              = map Y          $ strengthen m
+strengthen T                  = Just T
+strengthen F                  = Just F
+strengthen Zero               = Just Zero
+strengthen Unit       = Just Unit
 \end{code}
 
 \begin{code}
 public export
-tryClose : {k:_} -> PCFTerm k -> Maybe ClosedPCFTerm
+tryClose : {k : _} -> PCFTerm k -> Maybe ClosedPCFTerm
 tryClose {k} t = case k of
                  0      => Just t
-                 (S k') => strengthen t >>= tryClose
+                 (S l) => strengthen t >>= tryClose
 \end{code}
 
-As for types, we want terms to be comparable.
-
-\begin{hidden}
-implementation Eq (Symbol k) where
-  IfElse == IfElse = True
-  App    == App    = True
-  Pair   == Pair   = True
-  Fst    == Fst    = True
-  Snd    == Snd    = True
-  Succ   == Succ   = True
-  Pred   == Pred   = True
-  IsZero == IsZero = True
-  Y      == Y      = True
-  T      == T      = True
-  F      == F      = True
-  Zero   == Zero   = True
-  Unit   == Unit   = True
-  _      == _      = False
-\end{hidden}
-
-We are now able to define equality for terms. The important case is
+As for types, we want terms to be comparable. The important case is
 lambda-abstraction. We are using de Bruijn indices, which make comparing terms
 very easy.
 
@@ -118,12 +93,22 @@ very easy.
 public export partial
 implementation Eq (PCFTerm k) where
 
-  V v         == V w          = v == w
-  L a m       == L b n        = a == b && m == n
-  S s [a]     == S p [x]      = s == p && a == x
-  S s [a,b]   == S p [x,y]    = s == p && a == x && b == y
-  S s [a,b,c] == S p [x,y,z]  = s == p && a == x && b == y && c == z
-  _           == _            = False
+  V v              == V w              = v == w
+  L a m            == L b n            = a == b && m == n
+  IfThenElse m n p == IfThenElse q r s = m == q && n == r && p == s
+  App m n          == App p q          = m == p && n == q
+  Pair m n         == Pair p q         = m == p && n == q
+  Fst m            == Fst n            = m == n
+  Snd m            == Snd n            = m == n
+  Succ m           == Succ n           = m == n
+  Pred m           == Pred n           = m == n
+  IsZero m         == IsZero n         = m == n
+  Y m              == Y n              = m == n
+  T                == T                = True
+  F                == F                = True
+  Zero             == Zero             = True
+  Unit             == unit             = True
+  _                == _                = False
 \end{code}
 
 We can also implement a show function. The implementation in itself is not
@@ -132,19 +117,19 @@ interesting, so we omit the details.
 \begin{hidden}
 public export
 Show (PCFTerm k) where
-  show (V x)                = show x
-  show (L t m)              = "(λ" ++ show t ++ "." ++ show m ++ ")"
-  show (S IfElse [p, m, n]) = "if " ++ show p ++ " then " ++ show m ++ " else " ++ show n
-  show (S App    [m,n])     = "(" ++ show m ++ show n ++ ")"
-  show (S Pair   [m,n])     = "<" ++ show m ++ ", " ++ show n ++ ">"
-  show (S Fst    [m])       = "π₁(" ++ show m ++ ")"
-  show (S Snd    [m])       = "π₂(" ++ show m ++ ")"
-  show (S Succ   [m])       = "succ (" ++ show m ++ ")"
-  show (S Pred   [m])       = "pred (" ++ show m ++ ")"
-  show (S IsZero [m])       = "iszero (" ++ show m ++ ")"
-  show (S Y      [m])       = "Y(" ++ show m ++ ")"
-  show (S T      _)         = "T"
-  show (S F      _)         = "F"
-  show (S Zero   _)         = "zero"
-  show (S Unit   _)         = "*"
+  show (V x)              = show x
+  show (L t m)            = "(λ" ++ show t ++ "." ++ show m ++ ")"
+  show (IfThenElse m n p) = "if " ++ show m ++ " then " ++ show n ++ " else " ++ show p
+  show (App m n)          = "(" ++ show m ++ show n ++ ")"
+  show (Pair m n)         = "<" ++ show m ++ ", " ++ show n ++ ">"
+  show (Fst m)            = "π₁(" ++ show m ++ ")"
+  show (Snd m)            = "π₂(" ++ show m ++ ")"
+  show (Succ m)           = "succ (" ++ show m ++ ")"
+  show (Pred m)           = "pred (" ++ show m ++ ")"
+  show (IsZero m)         = "iszero (" ++ show m ++ ")"
+  show (Y m)              = "Y(" ++ show m ++ ")"
+  show T                  = "T"
+  show F                  = "F"
+  show Zero               = "zero"
+  show Unit               = "*"
 \end{hidden}

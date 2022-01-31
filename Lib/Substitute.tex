@@ -1,34 +1,38 @@
+\subsection{Substitution}
 
-< module Lib.Substitute
-<
-< import public Lib.Terms
-< import public Lib.TypedTerms
+\begin{hidden}
+module Lib.Substitute
+
+import public Lib.Terms
+import public Lib.TypedTerms
+\end{hidden}
 
 In order to define small-step reduction, we must be able to substitute a term
-for a variable in another term. 
+for a variable in another term.
 We only allow the maximal variable, indicated k in the following signature, to be substituted,
 so that we can decrease that upper bound by one for the return type and maintain a sharp upper bound.
 
 When substituting a term inside another, we might need to rename (increase)
 free variables. The following function does this.
-The depth argument keeps track of how many lambda's have been encoutered, 
+The depth argument keeps track of how many lambda's have been encoutered,
 while the types reflect that the upper bound on free variables also increases.
 
-Because of the totality checker, we have to give a *Vect version of the function as well, following 
+Because of the totality checker, we have to give a *Vect version of the function as well, following
 the same pattern as we did while type checking.
 
-> total incFreeVar : (n : Nat) -> PCFTerm k -> PCFTerm (S k)
+\begin{code}
+total incFreeVar : (n : Nat) -> PCFTerm k -> PCFTerm (S k)
 
-> total incFreeVarVect : (n : Nat) -> Vect m (PCFTerm k) -> Vect m (PCFTerm (S k))
-> incFreeVarVect x (y::ys) = (incFreeVar x y) :: (incFreeVarVect x ys)
-> incFreeVarVect _ [] = []
+total incFreeVarVect : (n : Nat) -> Vect m (PCFTerm k) -> Vect m (PCFTerm (S k))
+incFreeVarVect x (y::ys) = (incFreeVar x y) :: (incFreeVarVect x ys)
+incFreeVarVect _ [] = []
 
-> incFreeVar depth (V v)    = if (finToNat v) < depth
->                               then (V (weaken v))
->                               else (V (FS v))
-> incFreeVar depth (L t m)  = L t (incFreeVar (S depth) m)
-> incFreeVar depth (S s ms) = S s (incFreeVarVect depth ms)
-
+incFreeVar depth (V v)    = if (finToNat v) < depth
+                              then (V (weaken v))
+                            else (V (FS v))
+incFreeVar depth (L t m)  = L t (incFreeVar (S depth) m)
+incFreeVar depth (S s ms) = S s (incFreeVarVect depth ms)
+\end{code}
 
 < public export
 > total substitute : {k :_} -> PCFTerm (S k) -> PCFTerm k -> PCFTerm k
@@ -40,7 +44,7 @@ We try to strengthen (i.e., decrement) the bound on the variable index.
 The only reason for this to fail is if the index is already at the upper bound; if w == k, thus
 if strengthening fails, we should substitute
 
-> substitute (V w) s =  case Fin.strengthen w of 
+> substitute (V w) s =  case Fin.strengthen w of
 >                         Nothing => s
 >                         Just w' => V w'
 
