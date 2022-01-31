@@ -135,7 +135,7 @@ Show (PCFTerm k) where
   show (V x)                = show x
   show (L t m)              = "(λ" ++ show t ++ "." ++ show m ++ ")"
   show (S IfElse [p, m, n]) = "if " ++ show p ++ " then " ++ show m ++ " else " ++ show n
-  show (S App    [m,n])     = "(" ++ (show m) ++ (show n) ++ ")"
+  show (S App    [m,n])     = "(" ++ show m ++ show n ++ ")"
   show (S Pair   [m,n])     = "<" ++ show m ++ ", " ++ show n ++ ">"
   show (S Fst    [m])       = "π₁(" ++ show m ++ ")"
   show (S Snd    [m])       = "π₂(" ++ show m ++ ")"

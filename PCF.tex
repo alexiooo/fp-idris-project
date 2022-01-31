@@ -1,3 +1,4 @@
+
 \section{The Language PCF}
 
 This section is intended as a quick introduction to the language PCF. The reader may consult \cite{LambdaNotes} for a more detailed introduction.
@@ -24,9 +25,77 @@ The $\mbf{Y}$ constructor returns a fixpoint of the given term. It is what makes
 
 The reader may notice that among the well-formed terms, some do not make any sense. For example, terms such as $\mbf{iszero}(\mbf{T})$ or $\pi_1(\lambda x^\mbf{nat}.x)$ do not make sense. We should thus specify a type for each term and specify which constructions can be applied to which types.
 
-%% include simply-typed calculus typing rules (p. 52)
+
+
+ \begin{prooftree}
+ \AxiomC{}
+ \UnaryInfC{$\Gamma, x:A \proves x:A$}
+ \end{prooftree}
+
+\begin{prooftree}
+\AxiomC{$\Gamma\proves M:A\to B\qquad \Gamma\proves N:A$}
+\UnaryInfC{$\Gamma\proves MN:B$}
+\end{prooftree}
+
+\begin{prooftree}
+\AxiomC{$\Gamma\proves M:A\times B$}
+\UnaryInfC{$\Gamma\proves\pi_1M:A$}
+\end{prooftree}
+
+
+\begin{prooftree}
+\AxiomC{}
+\UnaryInfC{$\Gamma \proves * : 1$}
+\end{prooftree}
+
+\begin{prooftree}
+\AxiomC{$\Gamma, x:A\proves M:B$}
+\UnaryInfC{$\Gamma\proves\lambda x^A.M : A\to B$}
+\end{prooftree}
+
+\begin{prooftree}
+\AxiomC{$\Gamma\proves M:A\times B$}
+\UnaryInfC{$\Gamma\proves\pi_2M:B$}
+\end{prooftree}
+
+
+
+\begin{prooftree}
+\AxiomC{$\Gamma\proves M:A \qquad \Gamma\proves N:B$}
+\UnaryInfC{$\Gamma\proves \langle M,N\rangle:A\times B$}
+\end{prooftree}
 
 %% include PCF typing rules
+
+\begin{prooftree}
+\AxiomC{}
+\UnaryInfC{$\Gamma \proves \mathbf{T} : \mathbf{bool}$}
+\end{prooftree}  
+
+\begin{prooftree}
+\AxiomC{}
+\UnaryInfC{$\Gamma \proves \mathbf{F} : \mathbf{bool}$}
+\end{prooftree}
+
+\begin{prooftree}
+\AxiomC{$\Gamma \proves M : A \to A$}
+\UnaryInfC{$\Gamma \proves \mathbf{Y}(M) : A$}
+\end{prooftree}
+
+\begin{prooftree}
+\AxiomC{}
+\UnaryInfC{$\Gamma \proves \mathbf{zero} : \mathbf{nat}$}
+\end{prooftree}
+
+\begin{prooftree}
+\AxiomC{$\Gamma \proves M : \mathbf{nat}$}
+\UnaryInfC{$\Gamma \proves \mathbf{succ}(M) : \mathbf{nat}$}
+\end{prooftree}
+
+\begin{prooftree}
+\AxiomC{$\Gamma \proves M : \mathbf{nat}$}
+\UnaryInfC{$\Gamma \proves \mathbf{pred}(M) : \mathbf{nat}$}
+\end{prooftree}
 
 \subsection{Reduction}
 
