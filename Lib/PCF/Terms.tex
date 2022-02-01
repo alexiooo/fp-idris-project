@@ -20,7 +20,8 @@ Var : Nat -> Type
 Var = Fin
 \end{code}
 
-%%%%%%%%%% Insert something here.
+Instead of having a ton of different constructors, we define a symbol data type
+and then define a single constructor that works for all symbols.
 
 \begin{code}
 namespace Symbol
@@ -42,7 +43,7 @@ namespace Symbol
 \end{code}
 
 We also keep track of (an upper bound on) free variables in the type:
-\lstinline{PCFTerm} n encodes terms with at most n free variables.
+\lstinline{PCFTerm n} encodes terms with at most $n$ free variables.
 
 \begin{code}
 public export
@@ -65,26 +66,27 @@ Remember that the type only gives an upper bound, so an inhabitant of say
 
 The following will try to strengthen any such term. This really is just a
 wrapper around Fin.strengthen, with straightforward recursive cases,
-so we detail only variables and lambdas.   %%%%%%%%%%%%%%% Add details
+so we detail only variables and lambdas.
 
 \begin{code}
-strengthen : {k :_} -> PCFTerm (S k) -> Maybe (PCFTerm k)
-strengthenVect : {k :_} -> Vect n (PCFTerm (S k)) -> Maybe (Vect n (PCFTerm k))
-strengthenVect (y::ys) = [| (strengthen y) :: (strengthenVect ys) |]
-strengthenVect [] = Just []
+strengthen : {k : _} -> PCFTerm (S k) -> Maybe (PCFTerm k)
+strengthenVect : {k : _} -> Vect n (PCFTerm (S k)) -> Maybe (Vect n (PCFTerm k))
 \end{code}
 
-%%%% This strengthenVect function should be replaced by a map..
+The \lstinline{strengthenVect} function is useful for the symbol case.
 
 \begin{code}
 strengthen (V v)    = Fin.strengthen v >>= Just . V
 strengthen (L t m)  = strengthen m     >>= Just . L t
 strengthen (S s ar) = Just (S s !(strengthenVect ar))
+
+strengthenVect (y::ys) = [| (strengthen y) :: (strengthenVect ys) |]
+strengthenVect [] = Just []
 \end{code}
 
 \begin{code}
 public export
-tryClose : {k:_} -> PCFTerm k -> Maybe ClosedPCFTerm
+tryClose : {k : _} -> PCFTerm k -> Maybe ClosedPCFTerm
 tryClose {k} t = case k of
                  0      => Just t
                  (S k') => strengthen t >>= tryClose
