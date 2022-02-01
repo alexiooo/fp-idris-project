@@ -17,7 +17,7 @@ The depth argument keeps track of how many lambda's have been encoutered,
 while the types reflect that the upper bound on free variables also increases.
 
 \begin{code}
-total incFreeVar : (n : Nat) -> PCFTerm k -> PCFTerm (S k)
+total incFreeVar : Nat -> PCFTerm k -> PCFTerm (S k)
 incFreeVar depth (V v)    = if finToNat v < depth
                               then V (weaken v)
                             else V (FS v)

@@ -131,3 +131,34 @@ Show (PCFTerm k) where
   show Zero               = "zero"
   show Unit               = "*"
 \end{hidden}
+
+Finally, we want to be able to map over terms. That is, we want to make our life
+easier and have a single function that allows to recursively define a function
+on terms. Most of the times, only the variable and lambda case are interesting,
+and all the other cases simply consist of passing the function on.
+
+\begin{code}
+rec : {i, j : Nat} -> ({k : Nat} -> a -> Var (i+k) -> PCFTerm (j+k)) -> (a -> a) -> ({k : _} -> a -> PCFTerm (i+k) -> PCFTerm (j+k))
+
+
+rec bc lc arg (V v)              = bc arg v
+
+
+rec bc lc arg (L t m)            = L t ?m--(rec bc lc (lc arg) ?m)
+
+
+rec bc lc arg (IfThenElse m n p) =
+    IfThenElse (rec bc lc arg m) (rec bc lc arg n) (rec bc lc arg p)
+rec bc lc arg (App m n)          = App (rec bc lc arg m) (rec bc lc arg n)
+rec bc lc arg (Pair m n)         = Pair (rec bc lc arg m) (rec bc lc arg n)
+rec bc lc arg (Fst m)            = Fst (rec bc lc arg m)
+rec bc lc arg (Snd m)            = Snd (rec bc lc arg m)
+rec bc lc arg (Succ m)           = Succ (rec bc lc arg m)
+rec bc lc arg (Pred m)           = Pred (rec bc lc arg m)
+rec bc lc arg (IsZero m)         = IsZero (rec bc lc arg m)
+rec bc lc arg (Y m)              = Y (rec bc lc arg m)
+rec bc lc arg T                  = T
+rec bc lc arg F                  = F
+rec bc lc arg Zero               = Zero
+rec bc lc arg Unit               = Unit
+\end{code}
