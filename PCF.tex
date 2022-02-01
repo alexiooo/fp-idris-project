@@ -17,16 +17,16 @@ The terms for PCF are those of the simply-typed lambda calculus, plus some concr
     &\sep \mbf{iszero}\,(M) \sep \mbf{if}\,M\,\mbf{then}\,N\,\mbf{else}\,P \sep \mbf{Y}(M).
 \end{align*}
 
-The $\mbf{Y}$ constructor returns a fixpoint of the given term. It is what makes the language Turing complete. For example, the addition function can be defined as
+The $\mbf{Y}$ constructor returns a fixpoint of the given term. It is what makes the language Turing complete. Without adding $\Y$ to PCF, we would be able to prove that every well-typed term reduces to For example, the addition function can be defined as
 
-\[ + := Y(\lambda f^{\mbf{nat}\to\mbf{nat}}m^\mbf{nat}n^\mbf{nat}.\mbf{if}\,\mbf{iszero}(m)\,\mbf{then}\,n\,\mbf{else}\,\mbf{succ}(f \mbf{pred}(m) n)). \]
+\[ + := Y(\lambda f^{\mbf{nat}\to\mbf{nat}}m^\mbf{nat}n^\mbf{nat}.\mbf{if}\,\mbf{iszero}(m)\,\mbf{then}\,n\,\mbf{else }\,\mbf{succ}(f \mbf{pred}(m) n)). \]
 
 \subsection{Typing rules}
 
-The reader may notice that among the well-formed terms, some do not make any sense. For example, terms such as $\mbf{iszero}(\mbf{T})$ or $\pi_1(\lambda x^\mbf{nat}.x)$ do not make sense. We should thus specify a type for each term and specify which constructions can be applied to which types.
+The reader may notice that among the well-formed terms, some do not make any sense. For example, terms such as $\mbf{iszero}(\mbf{T})$ or $\pi_1(\lambda x^\mbf{nat}.x)$ do not make sense. We should thus specify a type for each term and specify which constructions can be applied to which types. We start by giving the typing rules for the fragment of PCF that is the simply typed lambda calculus with finite products:
 
 
-%simply lambda calculus typing rules
+%%%%% simply typed lambda calculus typing rules
 
 %base case
 \begin{prooftree}
@@ -65,14 +65,10 @@ The reader may notice that among the well-formed terms, some do not make any sen
 
 
 
+%%%%% PCF typing rules
 
+We now give the typing rules for 
 
-
-
-
-
-
-%% include PCF typing rules
 
 %booleans
 \begin{prooftree}
@@ -116,61 +112,201 @@ The reader may notice that among the well-formed terms, some do not make any sen
 
 \subsection{Reduction}
 
-TBA.
+\[
+\begin{tikzcd}[ampersand replacement=\&]
+\& \mathbf{pred} (\mathbf{succ} ((\lambda x.x)\mathbf{zero})) \ar[ld] \ar[rd]\& \\
+(\lambda x.x)\textbf{zero} \ar[rd] \& \& \textbf{pred} ( \textbf{succ} (\mathbf{zero})) \ar[ld] \\
+\& \textbf{zero} \& \\
+\end{tikzcd}
+\]
 
 \subsubsection{Small-step Reduction}
 
-TBA.
+%%%%% small step for simply typed lambda calculus
 
-\subsubsection{Big-step Reduction}
+% small step unit
+\begin{prooftree}
+\AxiomC{$M : 1$}
+\AxiomC{$M \neq *$}
+\BinaryInfC{$M \to *$}
+\end{prooftree}
 
+% small step functions
 \begin{prooftree}
 \AxiomC{}
-\UnaryInfC{$\mathbf{T} \Downarrow \mathbf{T}$}
+\UnaryInfC{$(\lambda x . M)N \to M[N/x]$}
+\DisplayProof
+\qquad
+\AxiomC{$M \to N$}
+\UnaryInfC{$MP \to NP$}
+\end{prooftree}
+
+%small step products
+\begin{prooftree}
+\AxiomC{}
+\UnaryInfC{$\pi_1 \langle M_1,M_2 \rangle \to M_1$}
+\DisplayProof
+\qquad
+\AxiomC{$M \to N$}
+\UnaryInfC{$\pi_i M \to \pi_i N$}
+\DisplayProof
+\qquad
+\AxiomC{}
+\UnaryInfC{$\pi_2 \langle M_1, M_2 \rangle \to M_2$}
+\end{prooftree}
+
+
+%%%%% small step for PCF
+
+%small step succ and Y
+\begin{prooftree}
+\AxiomC{$M \to N$}
+\UnaryInfC{$\succ(M) \to \succ(N)$}
+\DisplayProof
+\qquad
+\AxiomC{}
+\UnaryInfC{$\Y(M) \to M(\Y(M))$}
+\end{prooftree}
+
+
+
+%small step pred
+\begin{prooftree}
+\AxiomC{}
+\UnaryInfC{$\pred (\zero) \to \zero$}
+\DisplayProof
+\qquad
+\AxiomC{$M \to N$}
+\UnaryInfC{$\pred(M) \to \pred(N)$}
+\DisplayProof
+\qquad
+\AxiomC{}
+\UnaryInfC{$\pred(\succ(V)) \to V$}
+\end{prooftree}
+
+%small step iszero
+\begin{prooftree}
+\AxiomC{}
+\UnaryInfC{$\iszero (\zero) \to \T$}
+\DisplayProof
+\qquad
+\AxiomC{$M \to N$}
+\UnaryInfC{$\iszero(M) \to \iszero(N)$}
+\DisplayProof
+\qquad
+\AxiomC{}
+\UnaryInfC{$\iszero(\succ(V)) \to \F$}
+\end{prooftree}
+
+% small step if then else
+\begin{prooftree}
+\AxiomC{}
+\UnaryInfC{$\textbf{if } \T \textbf{ then } N \textbf{ else } P \to N$}
+\DisplayProof
+\qquad
+\AxiomC{}
+\UnaryInfC{$\textbf{if } \F \textbf{ then } N \textbf{ else } P \to P$}
 \end{prooftree}
 
 \begin{prooftree}
+\AxiomC{$M \to M'$}
+\UnaryInfC{$\textbf{if } M \textbf{ then } N \textbf{ else } P \to \textbf{if } M' \textbf{ then } N \textbf{ else }P$}
+\end{prooftree}
+
+
+\subsubsection{Big-step Reduction}
+
+%%%%% big step for simply typed lambda calculus
+
+%big step unit
+\begin{prooftree}
+\AxiomC{$M : 1$}
+\UnaryInfC{$M \Downarrow *$}
+\end{prooftree}
+
+%big step function
+\begin{prooftree}
+\AxiomC{}
+\UnaryInfC{$\lambda x.M \Downarrow \lambda x .M$}
+\DisplayProof
+\qquad
+\AxiomC{$M \Downarrow \lambda x. M'$}
+\AxiomC{$M'[N/x]\Downarrow V$}
+\BinaryInfC{$MN \Downarrow V$}
+\end{prooftree}
+
+% big step product
+\begin{prooftree}
+\AxiomC{$M \Downarrow \langle M_1,M_2 \rangle$}
+\AxiomC{$M_1 \Downarrow V$}
+\BinaryInfC{$\pi_1 M \Downarrow V$}
+\DisplayProof
+\qquad
+\AxiomC{}
+\UnaryInfC{$\langle M,N \rangle \Downarrow \langle M,N \rangle$}
+\DisplayProof
+\qquad
+\AxiomC{$M \Downarrow \langle M_1,M_2 \rangle $}
+\AxiomC{$M_2 \Downarrow V$}
+\BinaryInfC{$\pi_2 M \Downarrow V$}
+\end{prooftree}
+
+%%%%% big step for PCF 
+
+% big step Y
+\begin{prooftree}
+\AxiomC{$M(\mathbf{Y}(M)) \Downarrow V$}
+\UnaryInfC{$\mathbf{Y}(M) \Downarrow V$}
+\end{prooftree}
+
+% big step boolean
+\begin{prooftree}
+\AxiomC{}
+\UnaryInfC{$\mathbf{T} \Downarrow \mathbf{T}$}
+\DisplayProof
+\qquad
 \AxiomC{}
 \UnaryInfC{$\textbf{F} \Downarrow \textbf{F}$} 
 \end{prooftree}
 
-
+% big step nat succ
 \begin{prooftree}
-\AxiomC{}
+\AxiomC{\text{}}
 \UnaryInfC{$\textbf{zero} \Downarrow \mathbf{zero}$}
+\DisplayProof
+\qquad
+\AxiomC{$M \Downarrow V$}
+\UnaryInfC{$\succ (M) \Downarrow \succ (V)$}
 \end{prooftree}
 
-\begin{prooftree}
-\AxiomC{}
-\UnaryInfC{$\langle M,N \rangle \Downarrow \langle M,N \rangle$}
-\end{prooftree}
-
-\begin{prooftree}
-\AxiomC{}
-\UnaryInfC{$\lambda x.M \Downarrow \lambda x .M$}
-\end{prooftree}
-
+% big step nat pred
 \begin{prooftree}
 \AxiomC{$M \Downarrow \mathbf{zero}$}
 \UnaryInfC{$\mathbf{pred}(M) \Downarrow \mathbf{zero}$}
-\end{prooftree}
-
-\begin{prooftree}
+\DisplayProof
+\qquad
 \AxiomC{$M \Downarrow \mathbf{succ}(V)$}
 \UnaryInfC{$\mathbf{pred}(M) \Downarrow V$}
 \end{prooftree}
 
+% big step iszero
 \begin{prooftree}
 \AxiomC{$M \Downarrow \mathbf{zero}$}
 \UnaryInfC{$\mathbf{iszero}(M) \Downarrow \mathbf{T}$}
-\end{prooftree}
-
-\begin{prooftree}
+\DisplayProof
+\qquad
 \AxiomC{$M \Downarrow \mathbf{succ}(V)$}
 \UnaryInfC{$\mathbf{iszero}(M) \Downarrow \mathbf{F}$}
 \end{prooftree}
 
+% big step if then else
 \begin{prooftree}
-\AxiomC{$M(\mathbf{Y}(M)) \Downarrow V$}
-\UnaryInfC{$\mathbf{Y}(M) \Downarrow V$}
+\AxiomC{$M \Downarrow \T$}
+\AxiomC{$N \Downarrow V$}
+\BinaryInfC{$\textbf{if } M \textbf{ then } N \textbf{ else } P \Downarrow V$}
+\DisplayProof
+\qquad
+\AxiomC{$M \Downarrow \F$}
+\AxiomC{$P \Downarrow V$}
+\BinaryInfC{$\textbf{if } M \textbf{ then } N \textbf{ else } P \Downarrow V$}
 \end{prooftree}
