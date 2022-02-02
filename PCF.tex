@@ -1,7 +1,7 @@
 
 \section{The Language PCF}
 
-This section is intended as a quick introduction to the language PCF. The reader may consult \cite{LambdaNotes} for a more detailed introduction.
+PCF stands for ``programming with computable functions.'' It is based on LCF, the ``logic of computable functions,'' which was introduced by Dana Scott in \cite{LCF} as a restricted formalism for investigating computation, one better suited to this task than set theory. Gordon Plotkin then introduced PCF in \cite{PCF} in order to investigate the semantics of programming languages. He named this language PCF because it takes inspiration from the syntax of LCF. In what follows, we give a quick introduction to the language PCF. The reader may consult \cite{LambdaNotes} for a more detailed introduction.
 
 \subsection{Types and Terms}
 
@@ -17,9 +17,13 @@ The terms for PCF are those of the simply-typed lambda calculus, plus some concr
     &\sep \mbf{iszero}\,(M) \sep \mbf{if}\,M\,\mbf{then}\,N\,\mbf{else}\,P \sep \mbf{Y}(M).
 \end{align*}
 
-The $\mbf{Y}$ constructor returns a fixpoint of the given term. It is what makes the language Turing complete. Without adding $\Y$ to PCF, we would be able to prove that every well-typed term reduces to For example, the addition function can be defined as
+The $\mbf{Y}$ constructor returns a fixpoint of the given term. It is what makes the language Turing complete. Without adding $\Y$ to PCF, we would be able to prove that every well-typed term eventually reduces to a term that cannot be reduced further. That is, without $\Y$, every program written in PCF halts, but there are computable functions that do not halt on some inputs, so PCF without $\Y$ cannot be Turing complete. An example of how $\Y$ produces non-halting PCF programs is given by $\Y(\lambda x. \textbf{succ } x),$ whose reduction never halts:
 
-\[ + := Y(\lambda f^{\mbf{nat}\to\mbf{nat}}m^\mbf{nat}n^\mbf{nat}.\mbf{if}\,\mbf{iszero}(m)\,\mbf{then}\,n\,\mbf{else }\,\mbf{succ}(f \mbf{pred}(m) n)). \]
+$$\Y(\lambda x. \textbf{succ } x) \to^* \textbf{succ}(\Y(\lambda x. \textbf{succ } x)) \to^* \succ(\succ(\Y(\lambda x. \textbf{succ } x))) \to^* ...$$
+
+One may think of $\Y$ as a way to introduce recursion into PCF. For example, the addition function is most naturally defined by recursion, and it can be defined using $\Y$ as follows:
+
+\[ + := \Y(\lambda f^{\mbf{nat}\to\mbf{nat}}m^\mbf{nat}n^\mbf{nat}.\mbf{if}\,\mbf{iszero}(m)\,\mbf{then}\,n\,\mbf{else }\,\mbf{succ}(f \mbf{pred}(m) n)). \]
 
 \subsection{Typing rules}
 
