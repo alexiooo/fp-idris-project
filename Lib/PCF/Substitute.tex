@@ -58,7 +58,7 @@ substitute s (L t m) = L t (substitute (incFreeVar 0 s) m)
 
 All the other cases are straightforward, once again, the substitution is just passed on.
 
-\begin{code}}
+\begin{code}
 substitute s (S sym ms) = S sym (substituteVect s ms)
 
 substituteVect s (m::ms) = (substitute s m) :: (substituteVect s ms)
