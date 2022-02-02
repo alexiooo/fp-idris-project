@@ -19,7 +19,7 @@ The terms for PCF are those of the simply-typed lambda calculus, plus some concr
 
 The $\mbf{Y}$ constructor returns a fixpoint of the given term. It is what makes the language Turing complete. Without adding $\Y$ to PCF, we would be able to prove that every well-typed term eventually reduces to a term that cannot be reduced further. That is, without $\Y$, every program written in PCF halts, but there are computable functions that do not halt on some inputs, so PCF without $\Y$ cannot be Turing complete. An example of how $\Y$ produces non-halting PCF programs is given by $\Y(\lambda x. \textbf{succ } x),$ whose reduction never halts:
 
-$$\Y(\lambda x. \textbf{succ } x) \to^* \textbf{succ}(\Y(\lambda x. \textbf{succ } x)) \to^* \succ(\succ(\Y(\lambda x. \textbf{succ } x))) \to^* ...$$
+$$\Y(\textbf{succ}) \to \textbf{succ}(\Y(\textbf{succ})) \to \succ(\succ(\Y(\textbf{succ}))) \to ...$$
 
 One may think of $\Y$ as a way to introduce recursion into PCF. For example, the addition function is most naturally defined by recursion, and it can be defined using $\Y$ as follows:
 
@@ -29,90 +29,86 @@ One may think of $\Y$ as a way to introduce recursion into PCF. For example, the
 
 The reader may notice that among the well-formed terms, some do not make any sense. For example, terms such as $\mbf{iszero}(\mbf{T})$ or $\pi_1(\lambda x^\mbf{nat}.x)$ do not make sense. We should thus specify a type for each term and specify which constructions can be applied to which types. We start by giving the typing rules for the fragment of PCF that is the simply typed lambda calculus with finite products:
 
+\begin{multicols}{2}
+    \begin{prooftree} % var
+    \AxiomC{}
+    \UnaryInfC{$\Gamma, x:A \proves x:A$}
+    \end{prooftree}
+    
+    \begin{prooftree} % pair
+    \AxiomC{$\Gamma\proves M:A\qquad\Gamma\proves N:B$}
+    \UnaryInfC{$\Gamma\proves \langle M,N\rangle:A\times B$}
+    \end{prooftree}
+    
+    \begin{prooftree} % app
+    \AxiomC{$\Gamma\proves M:A\to B\qquad \Gamma\proves N:A$}
+    \UnaryInfC{$\Gamma\proves MN:B$}
+    \end{prooftree}
+    
+    \begin{prooftree} % pi_1
+    \AxiomC{$\Gamma\proves M:A\times B$}
+    \UnaryInfC{$\Gamma\proves\pi_1M:A$}
+    \end{prooftree}
+    
+    \begin{prooftree} % unit
+    \AxiomC{}
+    \UnaryInfC{$\Gamma \proves * : 1$}
+    \end{prooftree}
+    
+    \begin{prooftree} % abs
+    \AxiomC{$\Gamma, x:A\proves M:B$}
+    \UnaryInfC{$\Gamma\proves\lambda x^A.M : A\to B$}
+    \end{prooftree}
+    
+    \begin{prooftree} % pi_2
+    \AxiomC{$\Gamma\proves M:A\times B$}
+    \UnaryInfC{$\Gamma\proves\pi_2M:B$}
+    \end{prooftree}
+\end{multicols}
 
-%%%%% simply typed lambda calculus typing rules
+We now give the typing rules for PCF:
 
-%base case
-\begin{prooftree}
-\AxiomC{}
-\UnaryInfC{$\Gamma, x:A \proves x:A$}
-\DisplayProof
-\qquad
-\AxiomC{}
-\UnaryInfC{$\Gamma \proves * : 1$}
-\end{prooftree}
+\begin{multicols}{2}
+    \begin{prooftree} % T
+    \AxiomC{}
+    \UnaryInfC{$\Gamma \proves \mathbf{T} : \mathbf{bool}$}
+    \end{prooftree}
+    
+    \begin{prooftree} % zero
+    \AxiomC{}
+    \UnaryInfC{$\Gamma \proves \mathbf{zero} : \mathbf{nat}$}
+    \end{prooftree}
+    
+    \begin{prooftree} % pred
+    \AxiomC{$\Gamma \proves M : \mathbf{nat}$}
+    \UnaryInfC{$\Gamma \proves \mathbf{pred}(M) : \mathbf{nat}$}
+    \end{prooftree}
+    
+    \begin{prooftree} % if-then-else
+    \AxiomC{$\Gamma \proves M : \mathbf{bool}\qquad\Gamma \proves N : A\qquad\Gamma \proves P : A$}
+    \UnaryInfC{$\Gamma \proves \textbf{if } M \textbf{ then } N \textbf{ else } P : A$}
+    \end{prooftree}
 
-%functions
-\begin{prooftree}
-\AxiomC{$\Gamma, x:A\proves M:B$}
-\UnaryInfC{$\Gamma\proves\lambda x^A.M : A\to B$}
-\DisplayProof
-\qquad
-\AxiomC{$\Gamma\proves M:A\to B\qquad \Gamma\proves N:A$}
-\UnaryInfC{$\Gamma\proves MN:B$}
-\end{prooftree}
-
-%products
-\begin{prooftree}
-\AxiomC{$\Gamma\proves M:A \qquad \Gamma\proves N:B$}
-\UnaryInfC{$\Gamma\proves \langle M,N\rangle:A\times B$}
-\DisplayProof
-\qquad
-\AxiomC{$\Gamma\proves M:A\times B$}
-\UnaryInfC{$\Gamma\proves\pi_1M:A$}
-\DisplayProof
-\qquad
-\AxiomC{$\Gamma\proves M:A\times B$}
-\UnaryInfC{$\Gamma\proves\pi_2M:B$}
-\end{prooftree}
-
-
-
-
-%%%%% PCF typing rules
-
-We now give the typing rules for 
-
-
-%booleans
-\begin{prooftree}
-\AxiomC{}
-\UnaryInfC{$\Gamma \proves \mathbf{T} : \mathbf{bool}$}
-\DisplayProof
-\qquad
-\AxiomC{}
-\UnaryInfC{$\Gamma \proves \mathbf{F} : \mathbf{bool}$}
-\end{prooftree}
-
-
-%nat
-\begin{prooftree}
-\AxiomC{}
-\UnaryInfC{$\Gamma \proves \mathbf{zero} : \mathbf{nat}$}
-\DisplayProof
-\qquad
-\AxiomC{$\Gamma \proves M : \mathbf{nat}$}
-\UnaryInfC{$\Gamma \proves \mathbf{succ}(M) : \mathbf{nat}$}
-\DisplayProof
-\qquad
-\AxiomC{$\Gamma \proves M : \mathbf{nat}$}
-\UnaryInfC{$\Gamma \proves \mathbf{pred}(M) : \mathbf{nat}$}
-\end{prooftree}
-
-%miscellaneous 
-\begin{prooftree}
-\AxiomC{$\Gamma \proves M : \mathbf{nat}$}
-\UnaryInfC{$\Gamma \proves \mathbf{iszero}(M) : \mathbf{bool}$}
-\DisplayProof
-\qquad
-\AxiomC{$\Gamma \proves M : \mathbf{bool}\qquad\Gamma \proves N : A\qquad\Gamma \proves P : A$}
-\UnaryInfC{$\Gamma \proves \textbf{if } M \textbf{ then } N \textbf{ else } P : A$}
-\end{prooftree}
-
-\begin{prooftree}
-\AxiomC{$\Gamma \proves M : A \to A$}
-\UnaryInfC{$\Gamma \proves \mathbf{Y}(M) : A$}
-\end{prooftree}
+    \begin{prooftree} % F
+    \AxiomC{}
+    \UnaryInfC{$\Gamma \proves \mathbf{F} : \mathbf{bool}$}
+    \end{prooftree}
+    
+    \begin{prooftree} % succ
+    \AxiomC{$\Gamma \proves M : \mathbf{nat}$}
+    \UnaryInfC{$\Gamma \proves \mathbf{succ}(M) : \mathbf{nat}$}
+    \end{prooftree}
+    
+    \begin{prooftree} % iszero
+    \AxiomC{$\Gamma \proves M : \mathbf{nat}$}
+    \UnaryInfC{$\Gamma \proves \mathbf{iszero}(M) : \mathbf{bool}$}
+    \end{prooftree}
+    
+    \begin{prooftree} % Y
+    \AxiomC{$\Gamma \proves M : A \to A$}
+    \UnaryInfC{$\Gamma \proves \mathbf{Y}(M) : A$}
+    \end{prooftree}
+\end{multicols}
 
 \subsection{Reduction}
 
@@ -124,7 +120,7 @@ We now give the typing rules for
 \end{tikzcd}
 \]
 
-\subsubsection{Small-step Reduction}
+\subsubsection{Small-step Reduction}  % Doing all of that in a multicols environment would look neater IMO
 
 %%%%% small step for simply typed lambda calculus
 
