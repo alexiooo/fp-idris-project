@@ -80,8 +80,8 @@ strengthen (V v)    = Fin.strengthen v >>= Just . V
 strengthen (L t m)  = strengthen m     >>= Just . L t
 strengthen (S s ar) = Just (S s !(strengthenVect ar))
 
-strengthenVect (y::ys) = [| (strengthen y) :: (strengthenVect ys) |]
-strengthenVect [] = Just []
+strengthenVect (m::ms) = [| (strengthen m) :: (strengthenVect ms) |]
+strengthenVect []      = Just []
 \end{code}
 
 \begin{code}

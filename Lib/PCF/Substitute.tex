@@ -1,0 +1,66 @@
+\begin{hidden}
+module Lib.PCF.Substitute
+
+import public Lib.PCF.Terms
+\end{hidden}
+
+In order to define small-step reduction, we must be able to substitute a term
+for a variable in another term.
+We only allow the maximal variable, indicated k in the following signature, to be substituted,
+so that we can decrease that upper bound by one for the return type and maintain a sharp upper bound.
+
+When substituting a term inside another, we might need to rename (increase)
+free variables. The following function does this.
+The depth argument keeps track of how many lambda's have been encoutered,
+while the types reflect that the upper bound on free variables also increases.
+
+Because of the totality checker, we have to give a *Vect version of the function as well, following
+the same pattern as we did while type checking.
+
+\begin{code}
+total incFreeVar : Nat -> PCFTerm k -> PCFTerm (S k)
+total incFreeVarVect : Nat -> Vect n (PCFTerm k) -> Vect n (PCFTerm (S k))
+
+incFreeVar depth (V v)    = if (finToNat v) < depth
+                              then (V (weaken v))
+                            else (V (FS v))
+incFreeVar depth (L t m)  = L t (incFreeVar (S depth) m)
+incFreeVar depth (S s ms) = S s (incFreeVarVect depth ms)
+
+incFreeVarVect depth (m::ms) = (incFreeVar depth m) :: (incFreeVarVect depth ms)
+incFreeVarVect _     []      = []
+\end{code}
+
+We now define substitution.
+
+\begin{code}
+public export
+total substitute : {k :_} -> PCFTerm k -> PCFTerm (S k) -> PCFTerm k
+total substituteVect : {k :_} -> PCFTerm k -> Vect n (PCFTerm (S k)) -> Vect n (PCFTerm k)
+\end{code}
+
+We try to strengthen (i.e., decrement) the bound on the variable index.
+The only reason for this to fail is if the index is already at the upper bound; if w == k, thus
+if strengthening fails, we should substitute
+
+\begin{code}
+substitute s (V v) =  case Fin.strengthen v of
+                        Nothing => s
+                        Just w  => V w
+\end{code}
+
+Recall that the body of a lambda has one more (potential) free-variable, thus the upper bound is
+automatically incremented
+
+\begin{code}
+substitute s (L t m) = L t (substitute (incFreeVar 0 s) m)
+\end{code}
+
+All the other cases are straightforward, once again, the substitution is just passed on.
+
+\begin{code}}
+substitute s (S sym ms) = S sym (substituteVect s ms)
+
+substituteVect s (m::ms) = (substitute s m) :: (substituteVect s ms)
+substituteVect _ [] = []
+\end{code}
