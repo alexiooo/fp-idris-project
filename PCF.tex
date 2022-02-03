@@ -1,11 +1,11 @@
 
 \section{The Language PCF}
 
-PCF stands for ``programming with computable functions.'' It is based on LCF, the ``logic of computable functions,'' which was introduced by Dana Scott in \cite{LCF} as a restricted formalism for investigating computation, one better suited to this task than set theory. Gordon Plotkin then introduced PCF in \cite{PCF} in order to investigate the semantics of programming languages. He named this language PCF because it takes inspiration from the syntax of LCF. In what follows, we give a quick introduction to the language PCF. The reader may consult \cite{LambdaNotes} for a more detailed introduction.
+PCF stands for ``programming with computable functions.'' It is based on LCF, the ``logic of computable functions,'' which was introduced by Dana Scott in \cite{LCF} as a restricted formalism for investigating computation, one better suited to this task than set theory. Gordon Plotkin then introduced PCF in \cite{PCF} in order to investigate the semantics of programming languages. He named this language PCF because it was inspired by the syntax of LCF. In what follows, we give a quick introduction to the language PCF. The reader may consult \cite{LambdaNotes} for a more detailed introduction.
 
 \subsection{Types and Terms}
 
-PCF is a programming language that is very similar to the simply typed lambda-calculus. Instead of type variables, it has concrete type $\mbf{bool}$ and $\mbf{nat}$. It also has the classical type constructors $\to$, $\times$ and $1$. Formally, types are defined by the following BNF
+PCF is a programming language that is very similar to the simply typed lambda calculus. Instead of type variables, it has concrete type $\mbf{bool}$ and $\mbf{nat}$. It also has the classical type constructors $\to$, $\times$ and $1$. Formally, types are defined by the following BNF
 
 \[ A, B := \mbf{bool} \sep \mbf{nat} \sep A\to B \sep A\times B \sep 1. \]
 
@@ -19,6 +19,8 @@ The terms for PCF are those of the simply-typed lambda calculus, plus some concr
 
 The $\mbf{Y}$ constructor returns a fixpoint of the given term. It is what makes the language Turing complete. Without adding $\Y$ to PCF, we would be able to prove that every well-typed term eventually reduces to a term that cannot be reduced further. That is, without $\Y$, every program written in PCF halts, but there are computable functions that do not halt on some inputs, so PCF without $\Y$ cannot be Turing complete. An example of how $\Y$ produces non-halting PCF programs is given by $\Y(\lambda x. \textbf{succ } x),$ whose reduction never halts:
 
+% Reducing (lambda x . succ x) to succ makes this easier to read, but is succ a term of PCF?
+
 $$\Y(\textbf{succ}) \to \textbf{succ}(\Y(\textbf{succ})) \to \succ(\succ(\Y(\textbf{succ}))) \to ...$$
 
 One may think of $\Y$ as a way to introduce recursion into PCF. For example, the addition function is most naturally defined by recursion, and it can be defined using $\Y$ as follows:
@@ -30,29 +32,15 @@ One may think of $\Y$ as a way to introduce recursion into PCF. For example, the
 The reader may notice that among the well-formed terms, some do not make any sense. For example, terms such as $\mbf{iszero}(\mbf{T})$ or $\pi_1(\lambda x^\mbf{nat}.x)$ do not make sense. We should thus specify a type for each term and specify which constructions can be applied to which types. We start by giving the typing rules for the fragment of PCF that is the simply typed lambda calculus with finite products:
 
 \begin{multicols}{2}
-    \begin{prooftree} % var
-    \AxiomC{}
-    \UnaryInfC{$\Gamma, x:A \proves x:A$}
-    \end{prooftree}
-    
-    \begin{prooftree} % pair
-    \AxiomC{$\Gamma\proves M:A\qquad\Gamma\proves N:B$}
-    \UnaryInfC{$\Gamma\proves \langle M,N\rangle:A\times B$}
-    \end{prooftree}
-    
-    \begin{prooftree} % app
-    \AxiomC{$\Gamma\proves M:A\to B\qquad \Gamma\proves N:A$}
-    \UnaryInfC{$\Gamma\proves MN:B$}
-    \end{prooftree}
-    
-    \begin{prooftree} % pi_1
-    \AxiomC{$\Gamma\proves M:A\times B$}
-    \UnaryInfC{$\Gamma\proves\pi_1M:A$}
-    \end{prooftree}
     
     \begin{prooftree} % unit
     \AxiomC{}
     \UnaryInfC{$\Gamma \proves * : 1$}
+    \end{prooftree}
+    
+    \begin{prooftree} % var
+    \AxiomC{}
+    \UnaryInfC{$\Gamma, x:A \proves x:A$}
     \end{prooftree}
     
     \begin{prooftree} % abs
@@ -60,13 +48,32 @@ The reader may notice that among the well-formed terms, some do not make any sen
     \UnaryInfC{$\Gamma\proves\lambda x^A.M : A\to B$}
     \end{prooftree}
     
+    \begin{prooftree} % app
+    \AxiomC{$\Gamma\proves M:A\to B\qquad \Gamma\proves N:A$}
+    \UnaryInfC{$\Gamma\proves MN:B$}
+    \end{prooftree}
+    
+    \begin{prooftree} % pair
+    \AxiomC{$\Gamma\proves M:A\qquad\Gamma\proves N:B$}
+    \UnaryInfC{$\Gamma\proves \langle M,N\rangle:A\times B$}
+    \end{prooftree}
+    
+    \begin{prooftree} % pi_1
+    \AxiomC{$\Gamma\proves M:A\times B$}
+    \UnaryInfC{$\Gamma\proves\pi_1M:A$}
+    \end{prooftree}
+    
+    
+    
     \begin{prooftree} % pi_2
     \AxiomC{$\Gamma\proves M:A\times B$}
     \UnaryInfC{$\Gamma\proves\pi_2M:B$}
     \end{prooftree}
+    
+    
 \end{multicols}
 
-We now give the typing rules for PCF:
+We now give the typing rules for the rest of PCF:
 
 \begin{multicols}{2}
     \begin{prooftree} % T
@@ -112,17 +119,25 @@ We now give the typing rules for PCF:
 
 \subsection{Reduction}
 
+PCF is a programming language in which PCF-terms are programs. How do we run such a program? We reduce it to its simplest form. Note that the syntax of a PCF-term is not sufficient to determine its reduction behavior. For example, we have two sensible ways to reduce the term $\pred(\succ((\lambda x^{\textbf{nat}}.x)\zero)),$ as shown below: 
+
 \[
 \begin{tikzcd}[ampersand replacement=\&]
-\& \mathbf{pred} (\mathbf{succ} ((\lambda x.x)\mathbf{zero})) \ar[ld] \ar[rd]\& \\
-(\lambda x.x)\textbf{zero} \ar[rd] \& \& \textbf{pred} ( \textbf{succ} (\mathbf{zero})) \ar[ld] \\
+\& \mathbf{pred} (\mathbf{succ} ((\lambda x^{\textbf{nat}}.x)\mathbf{zero})) \ar[ld] \ar[rd]\& \\
+(\lambda x^{\textbf{nat}}.x)\textbf{zero} \ar[rd] \& \& \textbf{pred} ( \textbf{succ} (\mathbf{zero})) \ar[ld] \\
 \& \textbf{zero} \& \\
 \end{tikzcd}
 \]
 
+In order to view PCF-terms as programs, we need to specify a reduction order for PCF-terms so that they can be run deterministically. This reduction order is what makes PCF a programming language, rather than just a calculus like the simply typed lambda calculus. Below, we specify this reduction order in two ways, through small-step reduction and big-step reduction.
+
 \subsubsection{Small-step Reduction}  % Doing all of that in a multicols environment would look neater IMO
 
 %%%%% small step for simply typed lambda calculus
+
+Small-step reduction specifies how to reduce a PCF-term one step at a time. For example, the reduction $\pred(\succ((\lambda x^{\textbf{nat}}.x)\zero)) \to \pred(\succ(\zero))$ is one small-step reduction that the rules below specify. We begin by giving the small-step reduction rules for the fragment of PCF that is the simply typed lambda calculus with finite products:
+
+\begin{multicols}{2}
 
 % small step unit
 \begin{prooftree}
@@ -134,9 +149,10 @@ We now give the typing rules for PCF:
 % small step functions
 \begin{prooftree}
 \AxiomC{}
-\UnaryInfC{$(\lambda x . M)N \to M[N/x]$}
-\DisplayProof
-\qquad
+\UnaryInfC{$(\lambda x^A . M)N \to M[N/x]$}
+\end{prooftree}
+
+\begin{prooftree}
 \AxiomC{$M \to N$}
 \UnaryInfC{$MP \to NP$}
 \end{prooftree}
@@ -145,41 +161,49 @@ We now give the typing rules for PCF:
 \begin{prooftree}
 \AxiomC{}
 \UnaryInfC{$\pi_1 \langle M_1,M_2 \rangle \to M_1$}
-\DisplayProof
-\qquad
-\AxiomC{$M \to N$}
-\UnaryInfC{$\pi_i M \to \pi_i N$}
-\DisplayProof
-\qquad
+\end{prooftree}
+
+\begin{prooftree}
 \AxiomC{}
 \UnaryInfC{$\pi_2 \langle M_1, M_2 \rangle \to M_2$}
 \end{prooftree}
 
-
-%%%%% small step for PCF
-
-%small step succ and Y
 \begin{prooftree}
 \AxiomC{$M \to N$}
-\UnaryInfC{$\succ(M) \to \succ(N)$}
-\DisplayProof
-\qquad
+\UnaryInfC{$\pi_i M \to \pi_i N$}
+\end{prooftree}
+\end{multicols}
+
+We now give the small-step reduction rules for the rest of PCF:
+
+\begin{multicols}{2}
+%%%%% small step for PCF
+
+%small step Y
+\begin{prooftree}
 \AxiomC{}
 \UnaryInfC{$\Y(M) \to M(\Y(M))$}
 \end{prooftree}
 
+%small step succ
+\begin{prooftree}
+\AxiomC{$M \to N$}
+\UnaryInfC{$\succ(M) \to \succ(N)$}
+\end{prooftree}
 
 
 %small step pred
 \begin{prooftree}
 \AxiomC{}
 \UnaryInfC{$\pred (\zero) \to \zero$}
-\DisplayProof
-\qquad
+\end{prooftree}
+
+\begin{prooftree}
 \AxiomC{$M \to N$}
 \UnaryInfC{$\pred(M) \to \pred(N)$}
-\DisplayProof
-\qquad
+\end{prooftree}
+
+\begin{prooftree}
 \AxiomC{}
 \UnaryInfC{$\pred(\succ(V)) \to V$}
 \end{prooftree}
@@ -188,12 +212,14 @@ We now give the typing rules for PCF:
 \begin{prooftree}
 \AxiomC{}
 \UnaryInfC{$\iszero (\zero) \to \T$}
-\DisplayProof
-\qquad
+\end{prooftree}
+
+\begin{prooftree}
 \AxiomC{$M \to N$}
 \UnaryInfC{$\iszero(M) \to \iszero(N)$}
-\DisplayProof
-\qquad
+\end{prooftree}
+
+\begin{prooftree}
 \AxiomC{}
 \UnaryInfC{$\iszero(\succ(V)) \to \F$}
 \end{prooftree}
@@ -202,11 +228,14 @@ We now give the typing rules for PCF:
 \begin{prooftree}
 \AxiomC{}
 \UnaryInfC{$\textbf{if } \T \textbf{ then } N \textbf{ else } P \to N$}
-\DisplayProof
-\qquad
+\end{prooftree}
+
+\begin{prooftree}
 \AxiomC{}
 \UnaryInfC{$\textbf{if } \F \textbf{ then } N \textbf{ else } P \to P$}
 \end{prooftree}
+
+\end{multicols}
 
 \begin{prooftree}
 \AxiomC{$M \to M'$}
@@ -216,7 +245,11 @@ We now give the typing rules for PCF:
 
 \subsubsection{Big-step Reduction}
 
+We can concatenate small-step reductions to make a big-step reduction. For example, the small steps $\pred(\succ((\lambda x^{\textbf{nat}}.x)\zero)) \to \pred(\succ(\zero)) \to \zero$ can be concatenated to the big step $\pred(\succ((\lambda x^{\textbf{nat}}.x)\zero)) \to^* \zero,$ where $\to^*$ denotes finitely many small-step reductions. In this way, big-step reduction is defined using small-step reduction. We can also directly axiomatize big-step reduction, denoted by $\Downarrow,$ with the intention that $\Downarrow$ coincides with $\to^*.$ We first give the big-step reduction rules for the simply typed lambda calculus with finite products:
+
 %%%%% big step for simply typed lambda calculus
+
+\begin{multicols}{2}
 
 %big step unit
 \begin{prooftree}
@@ -227,10 +260,11 @@ We now give the typing rules for PCF:
 %big step function
 \begin{prooftree}
 \AxiomC{}
-\UnaryInfC{$\lambda x.M \Downarrow \lambda x .M$}
-\DisplayProof
-\qquad
-\AxiomC{$M \Downarrow \lambda x. M'$}
+\UnaryInfC{$\lambda x^A.M \Downarrow \lambda x^A .M$}
+\end{prooftree}
+
+\begin{prooftree}
+\AxiomC{$M \Downarrow \lambda x^A. M'$}
 \AxiomC{$M'[N/x]\Downarrow V$}
 \BinaryInfC{$MN \Downarrow V$}
 \end{prooftree}
@@ -240,18 +274,25 @@ We now give the typing rules for PCF:
 \AxiomC{$M \Downarrow \langle M_1,M_2 \rangle$}
 \AxiomC{$M_1 \Downarrow V$}
 \BinaryInfC{$\pi_1 M \Downarrow V$}
-\DisplayProof
-\qquad
+\end{prooftree}
+
+\begin{prooftree}
 \AxiomC{}
 \UnaryInfC{$\langle M,N \rangle \Downarrow \langle M,N \rangle$}
-\DisplayProof
-\qquad
+\end{prooftree}
+
+\begin{prooftree}
 \AxiomC{$M \Downarrow \langle M_1,M_2 \rangle $}
 \AxiomC{$M_2 \Downarrow V$}
 \BinaryInfC{$\pi_2 M \Downarrow V$}
 \end{prooftree}
+\end{multicols}
+
+We now give the big-step reduction rules for the rest of PCF:
 
 %%%%% big step for PCF 
+
+\begin{multicols}{2}
 
 % big step Y
 \begin{prooftree}
@@ -263,8 +304,9 @@ We now give the typing rules for PCF:
 \begin{prooftree}
 \AxiomC{}
 \UnaryInfC{$\mathbf{T} \Downarrow \mathbf{T}$}
-\DisplayProof
-\qquad
+\end{prooftree}
+
+\begin{prooftree}
 \AxiomC{}
 \UnaryInfC{$\textbf{F} \Downarrow \textbf{F}$} 
 \end{prooftree}
@@ -273,8 +315,9 @@ We now give the typing rules for PCF:
 \begin{prooftree}
 \AxiomC{\text{}}
 \UnaryInfC{$\textbf{zero} \Downarrow \mathbf{zero}$}
-\DisplayProof
-\qquad
+\end{prooftree}
+
+\begin{prooftree}
 \AxiomC{$M \Downarrow V$}
 \UnaryInfC{$\succ (M) \Downarrow \succ (V)$}
 \end{prooftree}
@@ -283,8 +326,9 @@ We now give the typing rules for PCF:
 \begin{prooftree}
 \AxiomC{$M \Downarrow \mathbf{zero}$}
 \UnaryInfC{$\mathbf{pred}(M) \Downarrow \mathbf{zero}$}
-\DisplayProof
-\qquad
+\end{prooftree}
+
+\begin{prooftree}
 \AxiomC{$M \Downarrow \mathbf{succ}(V)$}
 \UnaryInfC{$\mathbf{pred}(M) \Downarrow V$}
 \end{prooftree}
@@ -293,8 +337,9 @@ We now give the typing rules for PCF:
 \begin{prooftree}
 \AxiomC{$M \Downarrow \mathbf{zero}$}
 \UnaryInfC{$\mathbf{iszero}(M) \Downarrow \mathbf{T}$}
-\DisplayProof
-\qquad
+\end{prooftree}
+
+\begin{prooftree}
 \AxiomC{$M \Downarrow \mathbf{succ}(V)$}
 \UnaryInfC{$\mathbf{iszero}(M) \Downarrow \mathbf{F}$}
 \end{prooftree}
@@ -304,9 +349,12 @@ We now give the typing rules for PCF:
 \AxiomC{$M \Downarrow \T$}
 \AxiomC{$N \Downarrow V$}
 \BinaryInfC{$\textbf{if } M \textbf{ then } N \textbf{ else } P \Downarrow V$}
-\DisplayProof
-\qquad
+\end{prooftree}
+
+\begin{prooftree}
 \AxiomC{$M \Downarrow \F$}
 \AxiomC{$P \Downarrow V$}
 \BinaryInfC{$\textbf{if } M \textbf{ then } N \textbf{ else } P \Downarrow V$}
 \end{prooftree}
+
+\end{multicols}
