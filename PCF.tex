@@ -27,7 +27,7 @@ One may think of $\Y$ as a way to introduce recursion into PCF. For example, the
 
 \[ + := \Y(\lambda f^{\mbf{nat}\to\mbf{nat}}m^\mbf{nat}n^\mbf{nat}.\mbf{if}\,\mbf{iszero}(m)\,\mbf{then}\,n\,\mbf{else }\,\mbf{succ}(f \mbf{pred}(m) n)). \]
 
-\subsection{Typing rules}
+\subsection{Typing Rules}
 
 The reader may notice that among the well-formed terms, some do not make any sense. For example, terms such as $\mbf{iszero}(\mbf{T})$ or $\pi_1(\lambda x^\mbf{nat}.x)$ do not make sense. We should thus specify a type for each term and specify which constructions can be applied to which types. We start by giving the typing rules for the fragment of PCF that is the simply typed lambda calculus with finite products:
 
@@ -269,17 +269,20 @@ We can concatenate small-step reductions to make a big-step reduction. For examp
 \BinaryInfC{$MN \Downarrow V$}
 \end{prooftree}
 
+\columnbreak
 % big step product
+\begin{prooftree}
+\AxiomC{}
+\UnaryInfC{$\langle M,N \rangle \Downarrow \langle M,N \rangle$}
+\end{prooftree}
+
 \begin{prooftree}
 \AxiomC{$M \Downarrow \langle M_1,M_2 \rangle$}
 \AxiomC{$M_1 \Downarrow V$}
 \BinaryInfC{$\pi_1 M \Downarrow V$}
 \end{prooftree}
 
-\begin{prooftree}
-\AxiomC{}
-\UnaryInfC{$\langle M,N \rangle \Downarrow \langle M,N \rangle$}
-\end{prooftree}
+
 
 \begin{prooftree}
 \AxiomC{$M \Downarrow \langle M_1,M_2 \rangle $}
