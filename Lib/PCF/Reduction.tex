@@ -180,11 +180,11 @@ eval f (S s (m :: ms)) = evSym s !(eval f m) ms where
   evSym Snd     (Pair _ n) _      = eval f n
   evSym s       v          ms     = let m = (S s ((toTerm v) :: ms)) in  -- take the evaluated first arg, and recombine into a term m
                  case typeOfClosed m of
-                    Just PCFUnit => Just (C Unit)
-                    -- everything that hasn't evaluated so far, will evaluates to itself, but only
-                    -- if it is representable as value. This should be the case for all well-typed
-                    -- terms that reach this point (in fact, every well-typed term that reaches this
-                    -- point should be a successor). Notice that we are using the evaluated first
-                    -- argument here, not the original one.
-                    _            => toValue m
+                   Just PCFUnit => Just (C Unit)
+                   -- everything that hasn't evaluated so far, will evaluates to itself, but only
+                   -- if it is representable as value. This should be the case for all well-typed
+                   -- terms that reach this point (in fact, every well-typed term that reaches this
+                   -- point should be a successor). Notice that we are using the evaluated first
+                   -- argument here, not the original one.
+                   _            => toValue m
 \end{code}
