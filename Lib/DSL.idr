@@ -5,26 +5,26 @@
 |||   * writing if' p (then' m) (else' n)
 |||   * using nat' and bool' as types
 |||   * using curried versions of the constructors
-|||   * writing t ^ u for application, rather than App t u 
+|||   * writing t ^ u for application, rather than App t u
 ||| Note the ' marks, which differentiate the embedded PCF notation from Idris
 module Lib.DSL
 
-import public Lib.Terms
+import public Lib.PCF.Terms
 
 
 public export IfElse : PCFTerm k -> PCFTerm k -> PCFTerm k -> PCFTerm k
 public export App    : PCFTerm k -> PCFTerm k -> PCFTerm k   -- application
 public export Pair   : PCFTerm k -> PCFTerm k -> PCFTerm k   -- pairing
-public export Fst    : PCFTerm k -> PCFTerm k                    -- first projection
-public export Snd    : PCFTerm k -> PCFTerm k                    -- second projection
-public export Succ   : PCFTerm k -> PCFTerm k                   -- successor
-public export Pred   : PCFTerm k -> PCFTerm k                   -- predecessor
-public export IsZero : PCFTerm k -> PCFTerm k                 -- is zero predicate
-public export Y      : PCFTerm k -> PCFTerm k                      -- fixpoint / Y-combinator
-public export T      : PCFTerm k                                 -- true
-public export F      : PCFTerm k                                 -- false
-public export Zero   : PCFTerm k                                -- zero value
-public export Unit   : PCFTerm k                                   -- unit value (*)
+public export Fst    : PCFTerm k -> PCFTerm k                -- first projection
+public export Snd    : PCFTerm k -> PCFTerm k                -- second projection
+public export Succ   : PCFTerm k -> PCFTerm k                -- successor
+public export Pred   : PCFTerm k -> PCFTerm k                -- predecessor
+public export IsZero : PCFTerm k -> PCFTerm k                -- is zero predicate
+public export Y      : PCFTerm k -> PCFTerm k                -- fixpoint / Y-combinator
+public export T      : PCFTerm k                             -- true
+public export F      : PCFTerm k                             -- false
+public export Zero   : PCFTerm k                             -- zero value
+public export Unit   : PCFTerm k                             -- unit value (*)
 
 IfElse p m n = S IfElse [p, m, n]
 App    m n = S App    [m, n]

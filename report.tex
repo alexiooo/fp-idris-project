@@ -5,6 +5,7 @@
 \usepackage{bussproofs}
 \usepackage{amsmath}
 \usepackage{tikz-cd}
+\usepackage{comment}
 
 %commands
 \newcommand{\proves}{\vdash}
@@ -20,24 +21,26 @@
 \title{Implementing PCF in Idris}
 \author{Alex Keizer \and Jeremy Kirn \and Simon Lemal}
 \date{\today}
-\hypersetup{pdfauthor={Me}, pdftitle={My Report}}
+\hypersetup{pdfauthor={Alex Keizer, Jeremy Kirn, Simon Lemal}, pdftitle={Implementing PCF in Idris}}
 
 \begin{document}
 
 \maketitle
 
 \begin{abstract}
-We give a toy example of a report in \emph{literate programming} style.
-The main advantage of this is that source code and documentation can
-be written and presented next to each other.
-We use the listings package to typeset Idris source code nicely.
+PCF is a small extension of the simply typed lambda calculus that can be thought of as a basic programming language. We give a brief introduction to PCF, including its small-step and big-step reduction rules, and then give the details of our implementation of PCF in Idris, a dependently typed programming language similar to Haskell.
+
+%We give a toy example of a report in \emph{literate programming} style.
+%The main advantage of this is that source code and documentation can
+%be written and presented next to each other.
+%We use the listings package to typeset Idris source code nicely.
 \end{abstract}
 
-\vfill
 
+\setcounter{tocdepth}{2}
 \tableofcontents
 
-\clearpage
+
 
 % We include one file for each section. The ones containing code should
 % be called something.lhs and also mentioned in the .cabal file.

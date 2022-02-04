@@ -164,7 +164,7 @@ Evaluating such terms cost fuel.
 eval (More f) (S Y [m]) = eval f (S App [m, S Y [m]])
 \end{code}
 
-For othercases, we just do one step of computation then keep evaluating.
+For other cases, we just do one step of computation then keep evaluating.
 
 \begin{code}
 eval f (S s (m :: ms)) = evSym s !(eval f m) ms where
@@ -181,10 +181,7 @@ eval f (S s (m :: ms)) = evSym s !(eval f m) ms where
   evSym s       v          ms     = let m = (S s ((toTerm v) :: ms)) in  -- take the evaluated first arg, and recombine into a term m
                  case typeOfClosed m of
                    Just PCFUnit => Just (C Unit)
-                   -- everything that hasn't evaluated so far, will evaluates to itself, but only
-                   -- if it is representable as value. This should be the case for all well-typed
-                   -- terms that reach this point (in fact, every well-typed term that reaches this
-                   -- point should be a successor). Notice that we are using the evaluated first
-                   -- argument here, not the original one.
                    _            => toValue m
 \end{code}
+
+Everything that reaches that last clause will evaluate to itself, but only if it is representable as a value. This should only be the case for all well-typed terms that reach this point (in fact, every well-typed term that reaches this clause should be successor values). Notice that the argument \lstinline{m} is evaluated first.
