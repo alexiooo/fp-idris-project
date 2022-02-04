@@ -95,7 +95,9 @@ typeCheck con (S s ms) = case ( s,  !(typeCheckVect con ms) ) of
 
 \lstinline{DecEq} is an interface (cf. Haskells type-classes) for ``decidable equality''.
 That is, the implementation does not only return whether two things are equal, it should provide a proof of (in)equality.
--- implemented in Lib.Types.DecEq
+The implementation of \lstinline{DecEq} for \lstinline{PCFType} is quite straightforward, the interested reader can find it in the \lstinline{Lib.Types.DecEq} module.
+
+Recall that an \lstinline{IfElse} term is well-typed, if the then-branch and else-branch have the same type. To construct a \lstinline{TypedTerm} with the \lstinline{IfElse} constructor, we have to convince the type-checker of this equality, and indeed that is where the proof provided by \lstinline{decEq} is used.
 
 \begin{code}
   (IfElse,  [(PCFBool ** p), (a ** m), (b ** n)]) 
