@@ -5,7 +5,7 @@ PCF stands for ``programming with computable functions.'' It is based on LCF, th
 
 \subsection{Types and Terms}
 
-PCF is a programming language that is very similar to the simply typed lambda calculus. Instead of type variables, it has concrete types $\mbf{bool}$ and $\mbf{nat}$. It also has the classical type constructors $\to$, $\times$ and $1$. Formally, types are defined by the following BNF:
+PCF is a programming language that is very similar to the simply-typed lambda calculus. Instead of type variables, it has concrete types $\mbf{bool}$ and $\mbf{nat}$. It also has the classical type constructors $\to$, $\times$ and $1$. Formally, types are defined by the following BNF:
 
 \[ A, B := \mbf{bool} \sep \mbf{nat} \sep A\to B \sep A\times B \sep 1. \]
 
@@ -21,7 +21,7 @@ The $\mbf{Y}$ constructor returns a fixpoint of the given term. It is what makes
 
 % Reducing (lambda x . succ x) to succ makes this easier to read, but is succ a term of PCF?
 
-$$\Y(\lambda x^{\textbf{nat}}. \textbf{succ } x) \to \textbf{succ}(\Y(\lambda x^{\textbf{nat}}. \textbf{succ } x)) \to \succ(\succ(\Y(\lambda x^{\textbf{nat}}. \textbf{succ } x))) \to ... .$$
+$$\Y(\lambda x^{\textbf{nat}}. \textbf{succ } x) \to^* \textbf{succ}(\Y(\lambda x^{\textbf{nat}}. \textbf{succ } x)) \to^* \succ(\succ(\Y(\lambda x^{\textbf{nat}}. \textbf{succ } x))) \to^* ... .$$
 
 One may think of $\Y$ as a way to introduce recursion into PCF. For example, the addition function is most naturally defined by recursion, and it can be defined using $\Y$ as follows:
 
@@ -29,7 +29,7 @@ One may think of $\Y$ as a way to introduce recursion into PCF. For example, the
 
 \subsection{Typing Rules}
 
-The reader may notice that among the well-formed terms, some do not make any sense. For example, terms such as $\mbf{iszero}(\mbf{T})$ or $\pi_1(\lambda x^\mbf{nat}.x)$ do not make sense. We should thus specify a type for each term and specify which constructions can be applied to which types. We start by giving the typing rules for the fragment of PCF that is the simply typed lambda calculus with finite products:
+The reader may notice that among the well-formed terms, some do not make any sense. Such terms are, for example, $\mbf{iszero}(\mbf{T})$ or $\pi_1(\lambda x^\mbf{nat}.x)$. We should thus specify a type for each term and specify which constructions can be applied to which types. We start by giving the typing rules for the fragment of PCF that is the simply-typed lambda calculus with finite products:
 
 \begin{multicols}{2}
     
@@ -129,25 +129,25 @@ PCF is a programming language in which PCF-terms are programs. How do we run suc
 \end{tikzcd}
 \]
 
-In order to view PCF-terms as programs, we need to specify a reduction order for PCF-terms so that they can be run deterministically. This reduction order is what makes PCF a programming language, rather than just a calculus like the simply typed lambda calculus. Below, we specify this reduction order in in the small-step reduction style, while noting that it is also possible to do this in a big-step reduction style.
+In order to view PCF-terms as programs, we need to specify a reduction order for PCF-terms so that they can be run deterministically. This reduction order is what makes PCF a programming language, rather than just a calculus like the simply-typed lambda calculus. Below, we specify this reduction order in in the small-step reduction style, while noting that it is also possible to do this in a big-step reduction style.
 
-%%%%% small step for simply typed lambda calculus
+%%%%% small-step for simply-typed lambda calculus
 
 Small-step reduction specifies how to reduce a PCF-term one step at a time. For example, the reduction $\pred(\succ((\lambda x^{\textbf{nat}}.x)\zero)) \to \pred(\succ(\zero))$ is one small-step reduction that the rules below specify. If we reduce once more, $\pred(\succ(\zero)) \to \zero$, we arrive at the \textit{value} $\zero$, which we think of as the result of running the program $\pred(\succ((\lambda x^{\textbf{nat}}.x)\zero)).$ In general, the form of values is given by the following BNF, where $M$ and $N$ are any PCF-terms:
 $$ V := \T \sep \F \sep \zero \sep \succ(V) \sep * \sep \langle M,N \rangle \sep \lambda x^A.M.$$
 
-We begin by giving the small-step reduction rules for the fragment of PCF that is the simply typed lambda calculus with finite products:
+We begin by giving the small-step reduction rules for the fragment of PCF that is the simply-typed lambda calculus with finite products:
 
 \begin{multicols}{2}
 
-% small step unit
+% small-step unit
 \begin{prooftree}
 \AxiomC{$M : 1$}
 \AxiomC{$M \neq *$}
 \BinaryInfC{$M \to *$}
 \end{prooftree}
 
-% small step functions
+% small-step functions
 \begin{prooftree}
 \AxiomC{}
 \UnaryInfC{$(\lambda x^A . M)N \to M[N/x]$}
@@ -158,7 +158,7 @@ We begin by giving the small-step reduction rules for the fragment of PCF that i
 \UnaryInfC{$MP \to NP$}
 \end{prooftree}
 
-%small step products
+%small-step products
 \begin{prooftree}
 \AxiomC{}
 \UnaryInfC{$\pi_1 \langle M_1,M_2 \rangle \to M_1$}
@@ -178,15 +178,15 @@ We begin by giving the small-step reduction rules for the fragment of PCF that i
 We now give the small-step reduction rules for the rest of PCF:
 
 \begin{multicols}{2}
-%%%%% small step for PCF
+%%%%% small-step for PCF
 
-%small step Y
+%small-step Y
 \begin{prooftree}
 \AxiomC{}
 \UnaryInfC{$\Y(M) \to M(\Y(M))$}
 \end{prooftree}
 
-%small step succ
+%small-step succ
 \begin{prooftree}
 \AxiomC{$M \to N$}
 \UnaryInfC{$\succ(M) \to \succ(N)$}
@@ -195,7 +195,7 @@ We now give the small-step reduction rules for the rest of PCF:
 
 
 
-%small step pred
+%small-step pred
 \begin{prooftree}
 \AxiomC{}
 \UnaryInfC{$\pred (\zero) \to \zero$}
@@ -211,7 +211,7 @@ We now give the small-step reduction rules for the rest of PCF:
 \UnaryInfC{$\pred(\succ(V)) \to V$}
 \end{prooftree}
 
-%small step iszero
+%small-step iszero
 \begin{prooftree}
 \AxiomC{}
 \UnaryInfC{$\iszero (\zero) \to \T$}
@@ -229,7 +229,7 @@ We now give the small-step reduction rules for the rest of PCF:
 
 
 
-% small step if then else
+% small-step if then else
 \begin{prooftree}
 \AxiomC{}
 \UnaryInfC{$\textbf{if } \T \textbf{ then } N \textbf{ else } P \to N$}
@@ -249,23 +249,23 @@ We now give the small-step reduction rules for the rest of PCF:
 
 
 
-Small steps can be concatenated. For example, the small steps $\pred(\succ((\lambda x^{\textbf{nat}}.x)\zero)) \to \pred(\succ(\zero)) \to \zero$ can be concatenated to $\pred(\succ((\lambda x^{\textbf{nat}}.x)\zero)) \to^* \zero,$ where $\to^*$ denotes finitely many small-step reductions. Since $\zero$ is a value, we say that $\pred(\succ((\lambda x^{\textbf{nat}}.x)\zero))$ \textit{evaluates} to $\zero.$ In general, if $M \to^* V$, where $V$ is a value, we say that $M$ evaluates to $V.$
+Small-steps can be concatenated. For example, the small-steps $\pred(\succ((\lambda x^{\textbf{nat}}.x)\zero)) \to \pred(\succ(\zero)) \to \zero$ can be concatenated to $\pred(\succ((\lambda x^{\textbf{nat}}.x)\zero)) \to^* \zero,$ where $\to^*$ denotes finitely many small-step reductions. Since $\zero$ is a value, we say that $\pred(\succ((\lambda x^{\textbf{nat}}.x)\zero))$ \textit{evaluates} to $\zero.$ In general, if $M \to^* V$, where $V$ is a value, we say that $M$ evaluates to $V.$
 
-The notion of evaluating to a value is what gives us the big-step style of specifying reduction order. We can give rules that directly axiomatize big-step reduction, usually denoted by $\Downarrow,$ with the intention that $\Downarrow$ coincides with evaluating to a value via $\to^*.$ We will not give the rules for $\Downarrow,$ however, because our implementation of big-step reduction in Idris closely follows the idea that a big step is composed of multiple small steps that result in a value.
+The notion of evaluating to a value is what gives us the big-step style of specifying reduction order. We can give rules that directly axiomatize big-step reduction, usually denoted by $\Downarrow,$ with the intention that $\Downarrow$ coincides with evaluating to a value via $\to^*.$ We will not give the rules for $\Downarrow,$ however, because our implementation of big-step reduction in Idris closely follows the idea that a big-step is composed of multiple small-steps that result in a value.
 
 
 \begin{comment}
-%%%%% big step for simply typed lambda calculus
+%%%%% big-step for simply-typed lambda calculus
 
 \begin{multicols}{2}
 
-%big step unit
+%big-step unit
 \begin{prooftree}
 \AxiomC{$M : 1$}
 \UnaryInfC{$M \Downarrow *$}
 \end{prooftree}
 
-%big step function
+%big-step function
 \begin{prooftree}
 \AxiomC{}
 \UnaryInfC{$\lambda x^A.M \Downarrow \lambda x^A .M$}
@@ -278,7 +278,7 @@ The notion of evaluating to a value is what gives us the big-step style of speci
 \end{prooftree}
 
 \columnbreak
-% big step product
+% big-step product
 \begin{prooftree}
 \AxiomC{}
 \UnaryInfC{$\langle M,N \rangle \Downarrow \langle M,N \rangle$}
@@ -301,17 +301,17 @@ The notion of evaluating to a value is what gives us the big-step style of speci
 
 We now give the big-step reduction rules for the rest of PCF:
 
-%%%%% big step for PCF 
+%%%%% big-step for PCF 
 
 \begin{multicols}{2}
 
-% big step Y
+% big-step Y
 \begin{prooftree}
 \AxiomC{$M(\mathbf{Y}(M)) \Downarrow V$}
 \UnaryInfC{$\mathbf{Y}(M) \Downarrow V$}
 \end{prooftree}
 
-% big step boolean
+% big-step boolean
 \begin{prooftree}
 \AxiomC{}
 \UnaryInfC{$\mathbf{T} \Downarrow \mathbf{T}$}
@@ -322,7 +322,7 @@ We now give the big-step reduction rules for the rest of PCF:
 \UnaryInfC{$\textbf{F} \Downarrow \textbf{F}$} 
 \end{prooftree}
 
-% big step nat succ
+% big-step nat succ
 \begin{prooftree}
 \AxiomC{\text{}}
 \UnaryInfC{$\textbf{zero} \Downarrow \mathbf{zero}$}
@@ -333,7 +333,7 @@ We now give the big-step reduction rules for the rest of PCF:
 \UnaryInfC{$\succ (M) \Downarrow \succ (V)$}
 \end{prooftree}
 
-% big step nat pred
+% big-step nat pred
 \begin{prooftree}
 \AxiomC{$M \Downarrow \mathbf{zero}$}
 \UnaryInfC{$\mathbf{pred}(M) \Downarrow \mathbf{zero}$}
@@ -344,7 +344,7 @@ We now give the big-step reduction rules for the rest of PCF:
 \UnaryInfC{$\mathbf{pred}(M) \Downarrow V$}
 \end{prooftree}
 
-% big step iszero
+% big-step iszero
 \begin{prooftree}
 \AxiomC{$M \Downarrow \mathbf{zero}$}
 \UnaryInfC{$\mathbf{iszero}(M) \Downarrow \mathbf{T}$}
@@ -355,7 +355,7 @@ We now give the big-step reduction rules for the rest of PCF:
 \UnaryInfC{$\mathbf{iszero}(M) \Downarrow \mathbf{F}$}
 \end{prooftree}
 
-% big step if then else
+% big-step if then else
 \begin{prooftree}
 \AxiomC{$M \Downarrow \T$}
 \AxiomC{$N \Downarrow V$}

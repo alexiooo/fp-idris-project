@@ -14,7 +14,7 @@ import Data.DPair
 
 So far, we used a definition of terms that allowed us to express ``terms with at most $n$ free variables'' on the type level. In the following section, we will illustrate how we can use dependent types to give a type such that its inhabitants are always well-typed terms, or even terms of a specific (PCF) type.
 
-The construction goes as follows: \lstinline{TermOfType k con type}, where \lstinline{k} is the bound on free variables, \lstinline{con} a context with $k$ types and \lstinline{type} a PCFType, should represent all terms \lstinline{t} such that \lstinline{typeOf ctx t == Just type}.
+The construction goes as follows: \lstinline{TermOfType k con type}, where \lstinline{k} is the bound on free variables, \lstinline{con} a context with $k$ types and \lstinline{type} a \lstinline{PCFType}, should represent all terms \lstinline{t} such that \lstinline{typeOf con t == Just type}.
 The definition has the same constructors as standard \lstinline{PCFTerms}, but now the typing rules are also incorporated into the
 signatures.
 
@@ -58,7 +58,7 @@ From the description so far, one might (wrongly) expect that the following two s
 -- bar : TypedTerm con    -> ...
 \end{code}
 After all, the \lstinline{type} in \lstinline{foo} is universally quantified, so both functions take well-formed terms of arbitrary types.
-The difference is subtle: in \lstinline{type} exists purely in the type-checker and will be erased, at run-time \lstinline{foo} cannot inspect \lstinline{type}. Conversely, in \lstinline{bar} the type is stored in the dependent pair and is thus fully available at run-time.
+The difference is subtle: in \lstinline{foo} the type exists purely in the type-checker and will be erased, at run-time \lstinline{foo} cannot inspect \lstinline{type}. Conversely, in \lstinline{bar} the type is stored in the dependent pair and is thus fully available at run-time.
 
 
 For both notions, we give an alias for closed terms.
@@ -73,7 +73,7 @@ ClosedTypedTerm : Type
 ClosedTypedTerm = TypedTerm []
 \end{code}
 
-Type checking now means to translate a PCFTerm to a TypedTerm
+Type checking now means to translate a \lstinline{PCFTerm} to a \lstinline{TypedTerm}.
 
 \begin{code}
 public export
@@ -92,6 +92,10 @@ typeCheck con (V v)    = JustT (V v)
 typeCheck con (L t m)  = JustT (L t (snd !(typeCheck (t::con) m) ))
 typeCheck con (S s ms) = case ( s,  !(typeCheckVect con ms) ) of
 \end{code}
+
+\lstinline{DecEq} is an interface (cf. Haskells type-classes) for ``decidable equality''.
+That is, the implementation does not only return whether two things are equal, it should provide a proof of (in)equality.
+-- implemented in Lib.Types.DecEq
 
 \begin{code}
   (IfElse,  [(PCFBool ** p), (a ** m), (b ** n)]) 
@@ -167,4 +171,12 @@ Substitution has the nice property that it preserves types, as long as the subst
 the same type as the variable to be substituted had. Similarly, if term $m$ of type $t$
 small-step reduces to term $n$, then the latter also is of type $t$.
 
-This is true of our first implementation, but that is an artifact of the particular way we choose to implement the functions. 
+This is true of our first implementation, but merely as an artifact of the particular way we choose to implement the functions. We could have just as well given a different (wrong) definition,which does not have this property, but still fits the type signature and would thus be accepted by Idris.
+Using the new definitions of the current section, however, allows us to be more precise in the type signatures.
+\begin{code}
+substitute : TermOfType con t -> TermOfType (t::con) u -> TermOfType con u
+smallStep  : TermOfType con t -> Maybe (TermOfType con t)
+\end{code}
+
+Now any implementation should also carry a proof of type preservation, and any other code knows for sure that types are preserved.
+Sadly, this proof-burden does make it much harder to provide an implementation, and we were not able to.
