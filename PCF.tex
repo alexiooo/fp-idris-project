@@ -5,7 +5,7 @@ PCF stands for ``programming with computable functions.'' It is based on LCF, th
 
 \subsection{Types and Terms}
 
-PCF is a programming language that is very similar to the simply typed lambda calculus. Instead of type variables, it has concrete type $\mbf{bool}$ and $\mbf{nat}$. It also has the classical type constructors $\to$, $\times$ and $1$. Formally, types are defined by the following BNF
+PCF is a programming language that is very similar to the simply typed lambda calculus. Instead of type variables, it has concrete types $\mbf{bool}$ and $\mbf{nat}$. It also has the classical type constructors $\to$, $\times$ and $1$. Formally, types are defined by the following BNF
 
 \[ A, B := \mbf{bool} \sep \mbf{nat} \sep A\to B \sep A\times B \sep 1. \]
 
@@ -17,11 +17,11 @@ The terms for PCF are those of the simply-typed lambda calculus, plus some concr
     &\sep \mbf{iszero}\,(M) \sep \mbf{if}\,M\,\mbf{then}\,N\,\mbf{else}\,P \sep \mbf{Y}(M).
 \end{align*}
 
-The $\mbf{Y}$ constructor returns a fixpoint of the given term. It is what makes the language Turing complete. Without adding $\Y$ to PCF, we would be able to prove that every well-typed term eventually reduces to a term that cannot be reduced further. That is, without $\Y$, every program written in PCF halts, but there are computable functions that do not halt on some inputs, so PCF without $\Y$ cannot be Turing complete. An example of how $\Y$ produces non-halting PCF programs is given by $\Y(\lambda x. \textbf{succ } x),$ whose reduction never halts:
+The $\mbf{Y}$ constructor returns a fixpoint of the given term. It is what makes the language Turing complete. Without adding $\Y$ to PCF, we would be able to prove that every well-typed term eventually reduces to a term that cannot be reduced further. That is, without $\Y$, every program written in PCF halts, but there are computable functions that do not halt on some inputs, so PCF without $\Y$ cannot be Turing complete. An example of how $\Y$ produces non-halting PCF programs is given by $\Y(\lambda x^{\textbf{nat}}. \textbf{succ } x),$ whose reduction never halts:
 
 % Reducing (lambda x . succ x) to succ makes this easier to read, but is succ a term of PCF?
 
-$$\Y(\textbf{succ}) \to \textbf{succ}(\Y(\textbf{succ})) \to \succ(\succ(\Y(\textbf{succ}))) \to ...$$
+$$\Y(\lambda x^{\textbf{nat}}. \textbf{succ } x) \to \textbf{succ}(\Y(\lambda x^{\textbf{nat}}. \textbf{succ } x)) \to \succ(\succ(\Y(\lambda x^{\textbf{nat}}. \textbf{succ } x))) \to ...$$
 
 One may think of $\Y$ as a way to introduce recursion into PCF. For example, the addition function is most naturally defined by recursion, and it can be defined using $\Y$ as follows:
 
@@ -135,7 +135,10 @@ In order to view PCF-terms as programs, we need to specify a reduction order for
 
 %%%%% small step for simply typed lambda calculus
 
-Small-step reduction specifies how to reduce a PCF-term one step at a time. For example, the reduction $\pred(\succ((\lambda x^{\textbf{nat}}.x)\zero)) \to \pred(\succ(\zero))$ is one small-step reduction that the rules below specify. We begin by giving the small-step reduction rules for the fragment of PCF that is the simply typed lambda calculus with finite products:
+Small-step reduction specifies how to reduce a PCF-term one step at a time. For example, the reduction $\pred(\succ((\lambda x^{\textbf{nat}}.x)\zero)) \to \pred(\succ(\zero))$ is one small-step reduction that the rules below specify. If we reduce once more, $\pred(\succ(\zero)) \to \zero$, we arrive at the value $\zero$, which we think of as the result of running the program $\pred(\succ((\lambda x^{\textbf{nat}}.x)\zero)).$ In general, the form of values is given by the following BNF:
+$$ V := \T \sep \F \sep \zero \sep \succ(V) \sep * \sep \langle M,N \rangle \sep \lambda x^A.M$$
+
+We begin by giving the small-step reduction rules for the fragment of PCF that is the simply typed lambda calculus with finite products:
 
 \begin{multicols}{2}
 
@@ -192,6 +195,8 @@ We now give the small-step reduction rules for the rest of PCF:
 \end{prooftree}
 
 
+
+
 %small step pred
 \begin{prooftree}
 \AxiomC{}
@@ -224,6 +229,8 @@ We now give the small-step reduction rules for the rest of PCF:
 \UnaryInfC{$\iszero(\succ(V)) \to \F$}
 \end{prooftree}
 
+
+
 % small step if then else
 \begin{prooftree}
 \AxiomC{}
@@ -245,8 +252,10 @@ We now give the small-step reduction rules for the rest of PCF:
 
 \subsubsection{Big-step Reduction}
 
-We can concatenate small-step reductions to make a big-step reduction. For example, the small steps $\pred(\succ((\lambda x^{\textbf{nat}}.x)\zero)) \to \pred(\succ(\zero)) \to \zero$ can be concatenated to the big step $\pred(\succ((\lambda x^{\textbf{nat}}.x)\zero)) \to^* \zero,$ where $\to^*$ denotes finitely many small-step reductions. In this way, big-step reduction is defined using small-step reduction. We can also directly axiomatize big-step reduction, denoted by $\Downarrow,$ with the intention that $\Downarrow$ coincides with $\to^*.$ We first give the big-step reduction rules for the simply typed lambda calculus with finite products:
+We can concatenate small-step reductions to make a big-step reduction. For example, the small steps $\pred(\succ((\lambda x^{\textbf{nat}}.x)\zero)) \to \pred(\succ(\zero)) \to \zero$ can be concatenated to the big step $\pred(\succ((\lambda x^{\textbf{nat}}.x)\zero)) \to^* \zero,$ where $\to^*$ denotes finitely many small-step reductions. In this way, big-step reduction is defined using small-step reduction. We can also directly axiomatize big-step reduction, denoted by $\Downarrow,$ with the intention that $\Downarrow$ coincides with $\to^*.$ We will not give the rules for $\Downarrow,$ because our implementation of big-step reduction in Idris closely follows the idea that a big step is composed of multiple small steps.
 
+
+\begin{comment}
 %%%%% big step for simply typed lambda calculus
 
 \begin{multicols}{2}
@@ -361,3 +370,5 @@ We now give the big-step reduction rules for the rest of PCF:
 \end{prooftree}
 
 \end{multicols}
+
+\end{comment}
