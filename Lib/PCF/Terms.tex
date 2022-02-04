@@ -12,7 +12,7 @@ import public Data.Vect
 \end{hidden}
 
 We now want to define terms. We use de Bruijn indices to represent bound variables.
-This is an elegant way to deal with alpha-equivalence.
+This is an elegant way to deal with $\alpha$-equivalence.
 
 \begin{code}
 public export
@@ -42,7 +42,7 @@ namespace Symbol
     Unit   : Symbol 0       -- unit value (*)
 \end{code}
 
-We also keep track of (an upper bound on) free variables in the type:
+We also keep track of (an upper bound on) the number of free variables in the type:
 \lstinline{PCFTerm n} encodes terms with at most $n$ free variables.
 
 \begin{code}
@@ -65,7 +65,7 @@ Remember that the type only gives an upper bound, so an inhabitant of say
 \lstinline{PCFType 3} might still be closed.
 
 The following will try to strengthen any such term. This really is just a
-wrapper around Fin.strengthen, with straightforward recursive cases,
+wrapper around \lstinline{Fin.strengthen}, with straightforward recursive cases,
 so we detail only variables and lambdas.
 
 \begin{code}
@@ -92,7 +92,7 @@ tryClose {k} t = case k of
                  (S k') => strengthen t >>= tryClose
 \end{code}
 
-As for types, we want terms to be comparable. The important case is lambda-abstraction.
+As for types, we want terms to be comparable. The important case is lambda abstraction.
 We are using de Bruijn indices, which make comparing terms very easy.
 We once again skip the other trivial cases.
 
@@ -128,7 +128,7 @@ implementation Eq (PCFTerm k) where
   _           == _            = False
 \end{hidden}
 
-We can also implement a show function. The implementation in itself is not
+We can also implement a \lstinline{show} function. The implementation in itself is not
 interesting, so we omit the details.
 
 \begin{hidden}

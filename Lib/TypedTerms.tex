@@ -12,10 +12,10 @@ import Data.DPair
 
 \end{hidden}
 
-So far, we used a definition of terms that allowed us to express ``terms with at most $n$ free variables'' on the type level. In the following section, we will illustrate how we can use dependent types give a type, such that its inhabitants are allways well-typed terms, or even terms of a specific (PCF) type.
+So far, we used a definition of terms that allowed us to express ``terms with at most $n$ free variables'' on the type level. In the following section, we will illustrate how we can use dependent types to give a type such that its inhabitants are always well-typed terms, or even terms of a specific (PCF) type.
 
-The construction goes as follows: \texttt{TermOfType k con type}, where \texttt{k} is the bound on free variables, \texttt{con} a context with $k$ types and \texttt{type} a PCFType, should represent all terms \textt{t} such that \texttt{typeOf ctx t == Just type}.
-The definition has the same constructors as standard PCFTerms, but now the typing rules are also incorporated into the
+The construction goes as follows: \lstinline{TermOfType k con type}, where \lstinline{k} is the bound on free variables, \lstinline{con} a context with $k$ types and \lstinline{type} a PCFType, should represent all terms \lstinline{t} such that \lstinline{typeOf ctx t == Just type}.
+The definition has the same constructors as standard \lstinline{PCFTerms}, but now the typing rules are also incorporated into the
 signatures.
 
 \begin{code}
@@ -45,7 +45,7 @@ data TermOfType : {k : Nat} -> (con : Context k) -> (0 t : PCFType) -> Type wher
 \end{code}
 
 Often we don't want to specify the actual type, we just want to know the term has \emph{some} type.
-A \texttt{TypedTerms} is a dependent pair of a type and a term of that type.
+A \lstinline{TypedTerms} is a dependent pair of a type and a term of that type.
 \begin{code}
 public export
 TypedTerm : {k : Nat} -> (con : Context k) -> Type
@@ -57,8 +57,8 @@ From the description so far, one might (wrongly) expect that the following two s
 -- foo : TermOfType con type -> ...
 -- bar : TypedTerm con    -> ...
 \end{code}
-After all, the \texttt{type} in \texttt{foo} is universally quantified, so both function take well-formed terms of arbitrary types.
-The difference is subtle: in \texttt{type} exists purely in the type-checker and will be erased, at run-time \texttt{foo} cannot inspect \texttt{type}. Conversely, in \texttt{bar} the type is stored in the dependent pair and is thus fully available at run-time.
+After all, the \lstinline{type} in \lstinline{foo} is universally quantified, so both functions take well-formed terms of arbitrary types.
+The difference is subtle: in \lstinline{type} exists purely in the type-checker and will be erased, at run-time \lstinline{foo} cannot inspect \lstinline{type}. Conversely, in \lstinline{bar} the type is stored in the dependent pair and is thus fully available at run-time.
 
 
 For both notions, we give an alias for closed terms.
@@ -139,3 +139,32 @@ The following ``function'' expresses this equality, and indeed giving a definiti
 \end{code}
 However, Idris is explicitly not a proof assistant, and lacks many of the features that helps users write proofs in such tools.
 As such, we were unsuccessful in our attempts to prove the above in Idris.
+
+Of course, every well-typed term is still a term, so we can forget the extra structure and go back
+to the more general \texttt{PCFTerm} type.
+\begin{code}
+public export
+forgetType : {con: Context k} -> TermOfType con t -> PCFTerm k
+forgetType (V v)      = V v
+forgetType (L t1 x)   = L t1 (forgetType x)
+forgetType (App x y)  = S App   [forgetType x, forgetType y]
+forgetType (Pair x y) = S Pair  [forgetType x, forgetType y]
+forgetType (Fst x)    = S Fst   [forgetType x]
+forgetType (Snd x)    = S Snd   [forgetType x]
+forgetType (Succ x)   = S Succ  [forgetType x]
+forgetType (Pred x)   = S Pred  [forgetType x]
+forgetType (IsZero x) = S IsZero [forgetType x]
+forgetType (Y x)      = S Y     [forgetType x]
+forgetType (IfElse x y z) = S IfElse [forgetType x, forgetType y, forgetType z]
+forgetType T          = S T []
+forgetType F          = S F []
+forgetType Zero       = S Zero []
+forgetType Unit       = S Unit []
+\end{code}
+
+\subsection{Substitution}
+Substitution has the nice property that it preserves types, as long as the substituted term has 
+the same type as the variable to be substituted had. Similarly, if term $m$ of type $t$
+small-step reduces to term $n$, then the latter also is of type $t$.
+
+This is true of our first implementation, but that is an artifact of the particular way we choose to implement the functions. 
