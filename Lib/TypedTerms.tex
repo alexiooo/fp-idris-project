@@ -1,6 +1,7 @@
 \begin{hidden}
 module Lib.TypedTerms
 
+import public Lib.PCF.Terms
 import public Lib.PCF.Types
 import public Lib.PCF.TypeOf
 import public Lib.Types.DecEq
@@ -90,6 +91,9 @@ JustT m = Just (type ** m)
 typeCheck con (V v)    = JustT (V v) 
 typeCheck con (L t m)  = JustT (L t (snd !(typeCheck (t::con) m) ))
 typeCheck con (S s ms) = case ( s,  !(typeCheckVect con ms) ) of
+\end{code}
+
+\begin{code}
   (IfElse,  [(PCFBool ** p), (a ** m), (b ** n)]) 
       => case (decEq a b) of
             Yes eq => let n = (rewrite eq in n) in JustT (IfElse p m n)

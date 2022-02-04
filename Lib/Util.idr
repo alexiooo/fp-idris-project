@@ -1,7 +1,7 @@
 
 module Lib.Util
 
-import public Lib.Terms
+import public Lib.PCF.Terms
 
 %default total
 

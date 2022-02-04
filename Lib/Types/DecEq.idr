@@ -1,6 +1,6 @@
 module Lib.Types.DecEq
 
-import public Lib.Types
+import public Lib.PCF.Types
 
 import public Decidable.Equality
 
