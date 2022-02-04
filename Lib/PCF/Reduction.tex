@@ -17,7 +17,7 @@ We can now define reduction. We begin with small-step reduction.
 
 \subsubsection{Small-step Reduction}
 
-Not all terms can reduce, it is thus important that the result is of type Maybe PCFTerm.
+Not all terms can reduce, it is thus important that the result is of type \lstinline{Maybe PCFTerm}.
 
 \begin{code}
 public export
@@ -32,7 +32,7 @@ smallStep (S s arg) = ssSym s arg where
 \end{code}
 
 We start with the top-level reducts. It is worth mentioning that the reduction
-rule for $\mbf{pred}$ is slightly different from the one exposed in section %%% Add section number!!
+rule for $\mbf{pred}$ is slightly different from the one exposed in section \ref{sec:pcf}.
 
 \begin{code}
   ssSym Pred [S Zero []]     = Just $ S Zero []
@@ -53,7 +53,7 @@ rule for $\mbf{pred}$ is slightly different from the one exposed in section %%% 
 \end{code}
 
 If a term had no top-level reducts, then we try to reduce its first argument.
-The only exception is Pair, which does not evaluate its arguments at all.
+The only exception is \lstinline{Pair}, which does not evaluate its arguments at all.
 
 \begin{code}
   ssSym Pair _    = Nothing
@@ -137,12 +137,12 @@ are the terms that cannot be reduced further.
 \subsubsection{Big-step Reduction}
 
 By successively applying small-step reductions, terms can reduce to values.
-This is the so called big-step reduction.
+This is the so-called big-step reduction.
 
-Not all PCFTerms evaluate to a Value, some may enter an infinite loop.
-To still define eval as a total function, we supply it with some `fuel'.
+Not all terms evaluate to a value, some may enter an infinite loop.
+To still define \lstinline{eval} as a total function, we supply it with some ``fuel''.
 This fuel acts as an upper bound on computation steps. For well-typed terms,
-the function will only return Nothing if this upper bound was reached.
+the function will only return \lstinline{Nothing} if this upper bound was reached.
 
 \begin{code}
 public export
@@ -157,8 +157,8 @@ eval _ (S Pair [m, n]) = Just $ Pair m n
 eval _ (S s [])        = Just $ C s
 \end{code}
 
-Terms starting with Y are the terms that might not terminate.
-Evaluating such terms cost fuel.
+Terms starting with $\Y$ are the terms that might not terminate.
+Evaluating such terms costs fuel.
 
 \begin{code}
 eval (More f) (S Y [m]) = eval f (S App [m, S Y [m]])

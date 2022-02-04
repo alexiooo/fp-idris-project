@@ -1,0 +1,169 @@
+\begin{hidden}
+module Lib.TypedTerms
+
+import public Lib.PCF.Types
+import public Lib.PCF.TypeOf
+import public Lib.Types.DecEq
+import public Lib.Util
+import Data.DPair
+
+%default total
+
+\end{hidden}
+
+So far, we used a definition of terms that allowed us to express ``terms with at most $n$ free variables'' on the type level. In the following section, we will illustrate how we can use dependent types to give a type such that its inhabitants are always well-typed terms, or even terms of a specific (PCF) type.
+
+The construction goes as follows: \lstinline{TermOfType k con type}, where \lstinline{k} is the bound on free variables, \lstinline{con} a context with $k$ types and \lstinline{type} a PCFType, should represent all terms \lstinline{t} such that \lstinline{typeOf ctx t == Just type}.
+The definition has the same constructors as standard \lstinline{PCFTerms}, but now the typing rules are also incorporated into the
+signatures.
+
+\begin{code}
+public export
+data TermOfType : {k : Nat} -> (con : Context k) -> (0 t : PCFType) -> Type where
+    V    : (v : Var _)  -> TermOfType con (index v con)            -- variables
+    App  : TermOfType con (t1 ~> t2)  -> TermOfType con t1         -- application
+            -> TermOfType con t2  
+    L    : (t1 : PCFType)         -> TermOfType (t1 :: con) t2     -- lambda abstraction
+            -> TermOfType con (t1 ~> t2)   
+    Pair : TermOfType con t1 -> TermOfType con t2                  -- pairing
+            -> TermOfType con (t1 * t2)
+    Fst   : TermOfType con (t1 * _)                                -- first projection
+            -> TermOfType con t1
+    Snd   : TermOfType con (_ * t2)                                -- second projection
+            -> TermOfType con t2
+    T    : TermOfType _ PCFBool                                    -- true
+    F    : TermOfType _ PCFBool                                    -- false
+    Zero : TermOfType _ PCFNat                                     -- zero value
+    Succ : TermOfType c PCFNat -> TermOfType c PCFNat              -- successor
+    Pred : TermOfType c PCFNat -> TermOfType c PCFNat              -- predecessor
+    IsZero : TermOfType c PCFNat -> TermOfType c PCFBool           -- is zero predicate
+    IfElse : TermOfType c PCFBool -> TermOfType c t -> TermOfType c t
+                  -> TermOfType c t
+    Y     : TermOfType c (t ~> t) -> TermOfType c t                -- fixpoint / Y-combinator
+    Unit  : TermOfType c PCFUnit                                   -- unit value (*)
+\end{code}
+
+Often we don't want to specify the actual type, we just want to know the term has \emph{some} type.
+A \lstinline{TypedTerms} is a dependent pair of a type and a term of that type.
+\begin{code}
+public export
+TypedTerm : {k : Nat} -> (con : Context k) -> Type
+TypedTerm con = DPair PCFType (\t => TermOfType con t)
+\end{code}
+
+From the description so far, one might (wrongly) expect that the following two signatures are equivalent.
+\begin{code}
+-- foo : TermOfType con type -> ...
+-- bar : TypedTerm con    -> ...
+\end{code}
+After all, the \lstinline{type} in \lstinline{foo} is universally quantified, so both functions take well-formed terms of arbitrary types.
+The difference is subtle: in \lstinline{type} exists purely in the type-checker and will be erased, at run-time \lstinline{foo} cannot inspect \lstinline{type}. Conversely, in \lstinline{bar} the type is stored in the dependent pair and is thus fully available at run-time.
+
+
+For both notions, we give an alias for closed terms.
+
+\begin{code}
+public export
+ClosedTermOfType : (0 _ : PCFType) -> Type
+ClosedTermOfType = TermOfType []
+
+public export
+ClosedTypedTerm : Type
+ClosedTypedTerm = TypedTerm []
+\end{code}
+
+Type checking now means to translate a PCFTerm to a TypedTerm
+
+\begin{code}
+public export
+typeCheck : (con : Context k) -> PCFTerm k -> Maybe (TypedTerm con)
+
+public export
+typeCheckVect : (con: Context k) -> Vect n (PCFTerm k) -> Maybe (Vect n (TypedTerm con))
+typeCheckVect x (y :: ys) = [| (typeCheck x y) :: (typeCheckVect x ys) |]
+typeCheckVect _ []        = Just []
+
+||| A useful alias that will automatically infer the type
+JustT : {type : PCFType} -> TermOfType con type -> Maybe (TypedTerm con)
+JustT m = Just (type ** m)
+
+typeCheck con (V v)    = JustT (V v) 
+typeCheck con (L t m)  = JustT (L t (snd !(typeCheck (t::con) m) ))
+typeCheck con (S s ms) = case ( s,  !(typeCheckVect con ms) ) of
+\end{code}
+
+\begin{code}
+  (IfElse,  [(PCFBool ** p), (a ** m), (b ** n)]) 
+      => case (decEq a b) of
+            Yes eq => let n = (rewrite eq in n) in JustT (IfElse p m n)
+            No  _  => Nothing
+  (App,     [((a ~> b) ** m), (c ** n)])
+      => case (decEq a c) of
+            Yes eq => let n = (rewrite eq in n) in JustT (App m n)
+            No  _  => Nothing
+  (Pair,    [(_ ** m), (_ ** n)] )  => JustT (Pair m n)
+  (Fst,     [((_ * _) ** m)])       => JustT (Fst m)
+  (Snd,     [((_ * _) ** m)])       => JustT (Snd m)
+  (Succ,    [(PCFNat ** m)])        => JustT (Succ m)
+  (Pred,    [(PCFNat ** m)])        => JustT (Pred m)
+  (IsZero,  [(PCFNat ** m)])        => JustT (IsZero m)
+  (Y,       [(a ~> b ** m)])        => case (decEq a b) of
+                                          Yes eq => Just (a ** (Y (rewrite cong (a ~> ) eq in m)))
+                                          No  _  => Nothing
+  (T,       [])                     => JustT T
+  (F,       [])                     => JustT F
+  (Zero,    [])                     => JustT Zero
+  (Unit,    [])                     => JustT Unit
+  (_, _)                            => Nothing
+\end{code}
+
+\begin{code}
+public export
+typeCheckClosed : ClosedPCFTerm -> Maybe (TypedTerm [])
+typeCheckClosed m = typeCheck [] m
+\end{code}
+
+\begin{code}
+public export
+typeOf : TypedTerm k -> PCFType
+typeOf = fst
+\end{code}
+
+
+Now we have two notions of typeability: the original typeOf function and this new typeCheck function.
+The following ``function'' expresses this equality, and indeed giving a definition that satisfies the type checker would be a proof.
+\begin{code}
+-- typeOfMatchesCheck : (con : Context k) -> (m : PCFTerm k) 
+--                        -> (typeOf con m) = (typeCheck con m >>= Just . TypedTerms.typeOf)
+\end{code}
+However, Idris is explicitly not a proof assistant, and lacks many of the features that helps users write proofs in such tools.
+As such, we were unsuccessful in our attempts to prove the above in Idris.
+
+Of course, every well-typed term is still a term, so we can forget the extra structure and go back
+to the more general \texttt{PCFTerm} type.
+\begin{code}
+public export
+forgetType : {con: Context k} -> TermOfType con t -> PCFTerm k
+forgetType (V v)      = V v
+forgetType (L t1 x)   = L t1 (forgetType x)
+forgetType (App x y)  = S App   [forgetType x, forgetType y]
+forgetType (Pair x y) = S Pair  [forgetType x, forgetType y]
+forgetType (Fst x)    = S Fst   [forgetType x]
+forgetType (Snd x)    = S Snd   [forgetType x]
+forgetType (Succ x)   = S Succ  [forgetType x]
+forgetType (Pred x)   = S Pred  [forgetType x]
+forgetType (IsZero x) = S IsZero [forgetType x]
+forgetType (Y x)      = S Y     [forgetType x]
+forgetType (IfElse x y z) = S IfElse [forgetType x, forgetType y, forgetType z]
+forgetType T          = S T []
+forgetType F          = S F []
+forgetType Zero       = S Zero []
+forgetType Unit       = S Unit []
+\end{code}
+
+\subsection{Substitution}
+Substitution has the nice property that it preserves types, as long as the substituted term has 
+the same type as the variable to be substituted had. Similarly, if term $m$ of type $t$
+small-step reduces to term $n$, then the latter also is of type $t$.
+
+This is true of our first implementation, but that is an artifact of the particular way we choose to implement the functions. 

@@ -28,7 +28,7 @@
 \maketitle
 
 \begin{abstract}
-PCF is a small extension of the simply typed lambda calculus that can be thought of as a basic programming language. We give a brief introduction to PCF, including its small-step and big-step reduction rules, and then give the details of our implementation of PCF in Idris, a dependently typed programming language similar to Haskell.
+PCF is a small extension of the simply typed lambda calculus that can be thought of as a basic programming language. We give a brief introduction to PCF, including its small-step reduction rules, and then give the details of two of our implementations of PCF in Idris, a dependently typed programming language similar to Haskell. The second implementation more heavily utilizes the dependent types of Idris.
 
 %We give a toy example of a report in \emph{literate programming} style.
 %The main advantage of this is that source code and documentation can
@@ -48,6 +48,8 @@ PCF is a small extension of the simply typed lambda calculus that can be thought
 \input{PCF}
 
 \input{PrimeImpl}
+
+\input{TypedImpl}
 
 \addcontentsline{toc}{section}{Bibliography}
 \bibliographystyle{alpha}

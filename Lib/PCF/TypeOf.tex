@@ -9,8 +9,8 @@ import public Data.Vect
 \end{hidden}
 
 We are now ready to define a type infering function. Such a function takes as
-arguments a context and a term, and return a type if the term is typeable in
-the given context, and Nothing otherwise.
+arguments a context and a term, and it returns a type if the term is typeable in
+the given context and \lstinline{Nothing} otherwise.
 
 We've been keeping track of free variables in the type of terms,
 so we'd like to restrict to contexts that actually provide a type for all (potential) free variables
@@ -21,39 +21,37 @@ Context : Nat -> Type
 Context n = Vect n PCFType
 \end{code}
 
-Type checking occurs in two mutually recursive functions. TypeOf infers the type of a single term,
-while typeOfVect handles lists of terms.
+Type checking occurs in two mutually recursive functions. \lstinline{TypeOf} infers the type of a single term,
+while \lstinline{typeOfVect} handles lists of terms.
 
 \begin{code}
 public export
 total typeOf : Context k -> PCFTerm k -> Maybe PCFType
 total typeOfVect : Context k -> Vect n (PCFTerm k) -> Maybe (Vect n PCFType)
-\end{code}
 
-\begin{code}
 typeOf con (V v)      = Just (index v con)
 typeOf con (L t m)    = typeOf (t::con) m >>= Just . ( t ~> )
 typeOf con (S s ms)   = case (s,  !(typeOfVect con ms)) of
-  (IfElse,  [PCFBool, a, b])  => if a == b
-                                   then Just a
-                                 else Nothing
-  (App,     [(a ~> b), c])    => if a == c
-                                   then Just b
-                                 else Nothing
-  (Pair,    [a, b])           => Just (a * b)
-  (Fst,     [a * _])          => Just a
-  (Snd,     [_ * b])          => Just b
-  (Succ,    [PCFNat])         => Just PCFNat
-  (Pred,    [PCFNat])         => Just PCFNat
-  (IsZero,  [PCFNat])         => Just PCFBool
-  (Y,       [a ~> b])         => if a == b
-                                   then Just a
-                                 else Nothing
-  (T,       [])               => Just PCFBool
-  (F,       [])               => Just PCFBool
-  (Zero,    [])               => Just PCFNat
-  (Unit,    [])               => Just PCFUnit
-  (_, _)                      => Nothing
+  (IfElse,  [PCFBool, a, b]) => if a == b
+                                  then Just a
+                                else Nothing
+  (App,     [(a ~> b), c])   => if a == c
+                                  then Just b
+                                else Nothing
+  (Pair,    [a, b])          => Just (a * b)
+  (Fst,     [a * _])         => Just a
+  (Snd,     [_ * b])         => Just b
+  (Succ,    [PCFNat])        => Just PCFNat
+  (Pred,    [PCFNat])        => Just PCFNat
+  (IsZero,  [PCFNat])        => Just PCFBool
+  (Y,       [a ~> b])        => if a == b
+                                  then Just a
+                                else Nothing
+  (T,       [])              => Just PCFBool
+  (F,       [])              => Just PCFBool
+  (Zero,    [])              => Just PCFNat
+  (Unit,    [])              => Just PCFUnit
+  (_, _)                     => Nothing
 
 typeOfVect x (y :: ys) = [| (typeOf x y) :: (typeOfVect x ys) |]
 typeOfVect _ []        = Just []
